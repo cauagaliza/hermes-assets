@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const body = document.body;
+    const hermesApp = document.getElementById('hermes-app');
     const themeToggleIcon = document.getElementById('theme-toggle-icon');
-    const savedTheme = localStorage.getItem('theme');
 
     // UI Elements
     const openTransferModalBtn = document.getElementById('open-transfer-modal-btn');
@@ -30,84 +29,78 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeChatModalBtn = document.getElementById('close-chat-modal');
     const okChatBtn = document.getElementById('ok-chat-btn');
 
-    // Data Storage
+    if (!hermesApp) {
+        console.error('[Hermes] Elemento #hermes-app não encontrado na página. ' +
+            'O style.css inteiro é escopado em #hermes-app e o JS depende dele ' +
+            '— confira se o wrapper raiz da página tem exatamente esse id.');
+    }
+
+    // --- Estado ---
     let allTransferenciaData = [];
     let allPhaseoutData = [];
     let currentMode = '';
-    let mapaCodigoParaUra = {};
+
+    // -------------------------------------------------------
+    // Mapas construídos a partir das Tabelas da Wiki:
+    // mapaUraByTime: timeAtendimento (slug da Tabela_ura) -> codigo URA (novo unificado)
+    // mapaFilaPorSegmento: segmento normalizado (texto da Tabela_gtc) -> fila
+    // -------------------------------------------------------
+    let mapaUraByTime = {};
     let mapaFilaPorSegmento = {};
 
-    // Mapa manual URA -> GTC
-    const mapaSegmentoPorTimeAtendimento = {
-        'comunicacao_hibrido': 'COMUNICAÇÃO HIBRIDO',
-        'comunicacao_analogico': 'COMUNICAÇÃO ANALÓGICO',
-        'comunicacao_perifericos': 'COMUNICAÇÃO HIBRIDO',
-        'varejo_comunicacao': 'VAREJO GERAL',
-        'varejo_mibo': 'MIBO CAM',
-        'varejo_controle_acesso': 'VAREJO GERAL',
-        'varejo_energia': 'VAREJO GERAL',
-        'varejo_casa_inteligente': 'LINHA IZY',
-        'controle_acesso_condominial_ip': 'CONDOMINIAL',
-        'controle_acesso_condominial_analogico': 'CONDOMINIAL',
-        'controle_acesso_residencial': 'PORTEIROS',
-        'controle_acesso_incendio_iluminacao': 'IFIRE(Incêndio) / Sistemas Automatizados',
-        'controle_acesso_sistemas_automatizados': 'IFIRE(Incêndio) / Sistemas Automatizados',
-        'controle_acesso_corporativo': 'IFIRE(Incêndio) / Sistemas Automatizados',
-        'seguranca_alarmes_sensores': 'ALARMES',
-        'seguranca_cftv': 'CFTV',
-        'seguranca_linha_future_tmr': 'CFTV',
-        'redes_empresariais': 'REDES EMPRESARIAIS',
-        'redes_home_office': 'REDES HOME OFFICE',
-        'redes_fibra_optica': 'REDES FIBRA OPTICA',
-        'redes_linha_future': 'REDES FIBRA OPTICA',
-        'energia': 'ENERGIA CORPORATIVO',
-        'energia_solar': 'ENERGIA SOLAR'
+    // -------------------------------------------------------
+    // Correção manual: só é preciso preencher aqui se o slug gerado
+    // automaticamente a partir da coluna "Segmento" da tabela de
+    // Transferência não bater com a chave "Time atendimento" da
+    // Tabela_ura. O app avisa no console (F12) toda vez que isso
+    // acontece, com o segmento e o slug que ele tentou usar — é só
+    // copiar o slug tentado e apontar pro slug certo aqui.
+    // Formato: 'slug_tentado': 'slug_correto_na_tabela_ura'
+    // -------------------------------------------------------
+    const CORRECAO_SLUG_URA = {
+        // exemplo: 'controle_acesso_incendio_e_iluminacao': 'controle_acesso_incendio_iluminacao',
     };
 
-    // --- Helpers de Parse CSV e normalização ---
+    // === CSV HELPERS ===
     function normalizarChave(texto) {
-        return (texto || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+        return (texto || '').toString()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase().trim().replace(/\s+/g, ' ');
+    }
+
+    // Converte um texto humano (ex.: "Controle De Acesso Condominial Ip")
+    // num slug snake_case removendo palavras de ligação comuns em
+    // português, pra tentar bater com as chaves "Time atendimento" da
+    // Tabela_ura (ex.: "controle_acesso_condominial_ip").
+    const STOPWORDS_PT = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+    function slugify(texto) {
+        const palavras = normalizarChave(texto).split(' ').filter(p => p && !STOPWORDS_PT.has(p));
+        return palavras.join('_').replace(/[^a-z0-9_]/g, '');
     }
 
     function obterValorColuna(item, nomeAlvoNormalizado) {
-        const chaves = Object.keys(item);
-        for (let i = 0; i < chaves.length; i++) {
-            if (normalizarChave(chaves[i]) === nomeAlvoNormalizado) return item[chaves[i]];
+        for (const chave of Object.keys(item)) {
+            if (normalizarChave(chave) === nomeAlvoNormalizado) return item[chave];
         }
         return '';
     }
 
-    function dividirCodigos(texto) {
-        if (!texto) return [];
-        const codigos = [];
-        texto.split(',').forEach(parte => {
-            parte.split(/ ou /i).forEach(sub => {
-                const limpo = sub.trim();
-                if (limpo === '') return;
-                if (normalizarChave(limpo) === 'nao existe') return;
-                codigos.push(limpo);
-            });
-        });
-        return codigos;
-    }
-
     function parseCSV(texto) {
-        let limpo = texto.replace(/<pre>/gi, '').replace(/<\/pre>/gi, '').trim();
+        const limpo = texto.replace(/<pre>/gi, '').replace(/<\/pre>/gi, '').trim();
         const linhas = limpo.split('\n');
         const resultado = [];
-        let cabeçalhos = [];
+        let cabecalhos = [];
 
-        for (let i = 0; i < linhas.length; i++) {
-            let linhaAtual = linhas[i].trim();
+        for (const linha of linhas) {
+            const linhaAtual = linha.trim();
             if (!linhaAtual) continue;
             const colunas = linhaAtual.split(';');
-
-            if (cabeçalhos.length === 0) {
-                cabeçalhos = colunas.map(c => c.trim().replace(/^\uFEFF/, '')); // Remove BOM do primeiro header
+            if (cabecalhos.length === 0) {
+                cabecalhos = colunas.map(c => c.trim().replace(/^\uFEFF/, ''));
             } else {
-                let obj = {};
-                cabeçalhos.forEach((cabecalho, idx) => {
-                    obj[cabecalho] = colunas[idx] ? colunas[idx].trim() : '';
+                const obj = {};
+                cabecalhos.forEach((cab, idx) => {
+                    obj[cab] = colunas[idx] ? colunas[idx].trim() : '';
                 });
                 resultado.push(obj);
             }
@@ -115,152 +108,178 @@ document.addEventListener('DOMContentLoaded', () => {
         return resultado;
     }
 
+    // -------------------------------------------------------
+    // Monta mapaUraByTime: timeAtendimento -> codigoNovo
+    // -------------------------------------------------------
     function montarMapaUra(linhas) {
-        mapaCodigoParaUra = {};
-        linhas.forEach(linha => {
-            const timeAtendimento = obterValorColuna(linha, 'time atendimento').trim();
+        mapaUraByTime = {};
+        for (const linha of linhas) {
+            const time = obterValorColuna(linha, 'time atendimento').trim();
             const codigoNovo = obterValorColuna(linha, 'novo codigo unificado').trim();
-            const codigosAntigos = dividirCodigos(obterValorColuna(linha, 'codigo atual'));
-            codigosAntigos.forEach(codigo => {
-                mapaCodigoParaUra[codigo] = { codigoAtual: codigoNovo, timeAtendimento: timeAtendimento };
-            });
-        });
+            if (time) {
+                mapaUraByTime[time] = codigoNovo;
+            }
+        }
+        console.log('[Hermes] mapaUraByTime:', mapaUraByTime);
     }
 
+    // mapaFilaPorSegmento: segmento normalizado -> fila
     function montarMapaGtc(linhas) {
         mapaFilaPorSegmento = {};
-        linhas.forEach(linha => {
+        for (const linha of linhas) {
             const segmento = obterValorColuna(linha, 'segmento');
             const chave = normalizarChave(segmento);
-            if (!chave) return;
+            if (!chave) continue;
             mapaFilaPorSegmento[chave] = obterValorColuna(linha, 'fila').trim();
+        }
+        console.log('[Hermes] mapaFilaPorSegmento:', mapaFilaPorSegmento);
+    }
+
+    // -------------------------------------------------------
+    // Resolve o código URA a partir do Segmento do produto
+    // (coluna "Segmento" da tabela de Transferência).
+    // -------------------------------------------------------
+    function resolverCodigoUra(segmento) {
+        const slug = slugify(segmento);
+        if (mapaUraByTime[slug] !== undefined) return mapaUraByTime[slug];
+
+        const corrigido = CORRECAO_SLUG_URA[slug];
+        if (corrigido && mapaUraByTime[corrigido] !== undefined) return mapaUraByTime[corrigido];
+
+        console.warn(
+            '[Hermes] Código URA não encontrado para segmento "' + segmento + '" ' +
+            '(slug tentado: "' + slug + '"). Adicione uma correção em CORRECAO_SLUG_URA se o ' +
+            'slug certo na Tabela_ura for diferente.'
+        );
+        return '';
+    }
+
+    // Resolve a Fila comparando o Segmento da Transferência diretamente
+    // com o Segmento da Tabela_gtc (ambos textos legíveis, então a
+    // comparação normalizada costuma bater sem precisar de mapa manual).
+    function resolverFila(segmento) {
+        const chave = normalizarChave(segmento);
+        const fila = mapaFilaPorSegmento[chave];
+        if (fila !== undefined) return fila;
+
+        console.warn('[Hermes] Fila não encontrada na Tabela_gtc para o segmento "' + segmento + '".');
+        return '';
+    }
+
+    // === TEMA ===
+    function setTheme(theme) {
+        if (!hermesApp) return;
+        if (theme === 'dark') {
+            hermesApp.classList.add('dark-mode');
+            if (themeToggleIcon) themeToggleIcon.textContent = '🌙';
+        } else {
+            hermesApp.classList.remove('dark-mode');
+            if (themeToggleIcon) themeToggleIcon.textContent = '☀️';
+        }
+        localStorage.setItem('hermes-theme', theme);
+    }
+
+    const savedTheme = localStorage.getItem('hermes-theme') || 'dark';
+    setTheme(savedTheme);
+
+    if (themeToggleIcon) {
+        themeToggleIcon.addEventListener('click', () => {
+            setTheme(hermesApp && hermesApp.classList.contains('dark-mode') ? 'light' : 'dark');
         });
     }
 
-    // --- Theme Management ---
-    function setTheme(theme) {
-        if (theme === 'dark') {
-            body.classList.add('dark-mode');
-            themeToggleIcon.textContent = '🌙';
-            localStorage.setItem('theme', 'dark');
-        } else {
-            body.classList.remove('dark-mode');
-            themeToggleIcon.textContent = '☀️';
-            localStorage.setItem('theme', 'light');
-        }
-    }
+    // === MODAIS ===
+    function openModal(modal) { if (modal) modal.classList.add('active'); }
+    function closeModal(modal) { if (modal) modal.classList.remove('active'); }
 
-    if (savedTheme) {
-        setTheme(savedTheme);
-    } else {
-        setTheme('dark');
-    }
-
-    themeToggleIcon.addEventListener('click', () => {
-        const currentTheme = localStorage.getItem('theme') || 'dark';
-        setTheme(currentTheme === 'dark' ? 'light' : 'dark');
-    });
-
-    // --- Helper Functions ---
-    function openModal(modal) { modal.classList.add('active'); }
-    function closeModal(modal) { modal.classList.remove('active'); }
-
-    // --- Fetch Data do MEDIAWIKI (Sem servidor node!) ---
+    // === FETCH DADOS DA WIKI ===
     async function fetchAllData() {
         try {
-            const charE = String.fromCharCode(38); // Evita problemas de serialização '&' na Wiki
-            const urlTransf = 'https://suporte.intelbras.com.br/index.php?title=Teste_hermes_tranferencia' + charE + 'action=raw';
-            const urlPhase = 'https://suporte.intelbras.com.br/index.php?title=Teste_hermes_phaseout' + charE + 'action=raw';
-            const urlUra = 'https://suporte.intelbras.com.br/index.php?title=Tabela_ura' + charE + 'action=raw';
-            const urlGtc = 'https://suporte.intelbras.com.br/index.php?title=Tabela_gtc' + charE + 'action=raw';
-
+            // app.js é um arquivo externo (GitHub Pages), nunca passa pelo
+            // serializador de HTML da MediaWiki — não precisa do truque de
+            // montar '&' via String.fromCharCode aqui (isso só era
+            // necessário quando o JS ficava inline dentro da página wiki).
             const [resT, resP, resUra, resGtc] = await Promise.all([
-                fetch(urlTransf), fetch(urlPhase), fetch(urlUra), fetch(urlGtc)
+                fetch('https://suporte.intelbras.com.br/index.php?title=Teste_hermes_tranferencia&action=raw'),
+                fetch('https://suporte.intelbras.com.br/index.php?title=Teste_hermes_phaseout&action=raw'),
+                fetch('https://suporte.intelbras.com.br/index.php?title=Tabela_ura&action=raw'),
+                fetch('https://suporte.intelbras.com.br/index.php?title=Tabela_gtc&action=raw'),
             ]);
 
-            // Primeiro prepara os mapas (GTC e URA) se existirem
+            // Constrói os mapas primeiro (URA e GTC)
             if (resUra.ok) montarMapaUra(parseCSV(await resUra.text()));
             if (resGtc.ok) montarMapaGtc(parseCSV(await resGtc.text()));
 
-            // Processa Phaseout
+            // Phase Out
             if (resP.ok) {
-                const rawPhaseout = parseCSV(await resP.text());
-                allPhaseoutData = rawPhaseout.map(raw => {
+                allPhaseoutData = parseCSV(await resP.text()).map(raw => {
                     const vals = Object.values(raw);
                     return {
-                        unidade: vals[0] || '',
-                        segmento: vals[1] || '',
-                        item: vals[2] || '',
-                        descricao: vals[3] || '',
-                        modelo: vals[4] || '',
-                        data_phase_out: vals[5] || '',
-                        substituto_direto: vals[6] || '',
+                        unidade:            vals[0] || '',
+                        segmento:           vals[1] || '',
+                        item:               vals[2] || '',
+                        descricao:          vals[3] || '',
+                        modelo:             vals[4] || '',
+                        data_phase_out:     vals[5] || '',
                         descricao_subs_dir: vals[7] || '',
-                        substituto_indicacao: vals[8] || '',
-                        descricao_subs_ind: vals[9] || ''
+                        descricao_subs_ind: vals[9] || '',
                     };
                 });
             }
 
-            // Processa Transferencia resolvendo cruzamento de URA e Fila
+            // Transferência
+            // A chave de cruzamento agora é a coluna "Segmento" (texto
+            // legível, ex: "Energia Solar"), NÃO a "Transferência
+            // Telefone" (que é outro dado do produto, não um slug de
+            // categoria, e por isso nunca batia com a Tabela_ura).
             if (resT.ok) {
-                const rawTransf = parseCSV(await resT.text());
-                allTransferenciaData = rawTransf.map(raw => {
-                    let codigoUraAtual = '';
-                    let fila = '';
-                    
-                    const rawUraAntigo = obterValorColuna(raw, 'ura').trim();
-                    if (rawUraAntigo && mapaCodigoParaUra[rawUraAntigo]) {
-                        const infoUra = mapaCodigoParaUra[rawUraAntigo];
-                        codigoUraAtual = infoUra.codigoAtual;
-                        const segmentoGtc = mapaSegmentoPorTimeAtendimento[infoUra.timeAtendimento] || '';
-                        if (segmentoGtc) {
-                            fila = mapaFilaPorSegmento[normalizarChave(segmentoGtc)] || '';
-                        }
-                    }
-
+                allTransferenciaData = parseCSV(await resT.text()).map(raw => {
+                    const segmento = obterValorColuna(raw, 'segmento');
                     return {
-                        produto: obterValorColuna(raw, 'nome do produto') || raw['Nome do produto'] || '',
-                        unidade_negocio: obterValorColuna(raw, 'unidade de negocio') || raw['Unidade de Negócio'] || '',
-                        segmento: obterValorColuna(raw, 'segmento') || raw['Segmento'] || '',
-                        transferencia_chat: obterValorColuna(raw, 'transferencia chat') || raw['Transferência Chat'] || '',
-                        transferencia_telefone: obterValorColuna(raw, 'transferencia telefone') || raw['Transferência Telefone'] || '',
-                        ura: codigoUraAtual || rawUraAntigo,
-                        fila_distribuidor: fila || obterValorColuna(raw, 'fila distribuidor')
+                        produto: obterValorColuna(raw, 'nome do produto'),
+                        // CSV usa "Diretoria de Produto", exibimos como "Unidade de Negócio"
+                        unidade_negocio: obterValorColuna(raw, 'diretoria de produto')
+                                      || obterValorColuna(raw, 'unidade de negocio'),
+                        segmento: segmento,
+                        transferencia_chat: obterValorColuna(raw, 'transferencia chat'),
+                        transferencia_telefone: obterValorColuna(raw, 'transferencia telefone'),
+                        ura: resolverCodigoUra(segmento),
+                        fila_distribuidor: resolverFila(segmento),
                     };
                 });
             }
 
-            console.log('✅ Dados carregados e formatados (Via MediaWiki CSVs).');
-            console.log(`📊 Transferência: ${allTransferenciaData.length}`);
-            console.log(`📊 Phaseout: ${allPhaseoutData.length}`);
+            console.log('[Hermes] ✅ Dados carregados!');
+            console.log('[Hermes] Transferência (amostra):', allTransferenciaData.slice(0, 3));
+            console.log('[Hermes] Phase Out (amostra):', allPhaseoutData.slice(0, 2));
 
-        } catch (error) {
-            console.error('Erro ao buscar todos os dados:', error);
-            alert('Não foi possível carregar os dados da Wiki. Verifique a conexão.');
+        } catch (err) {
+            console.error('[Hermes] Erro ao carregar dados:', err);
         }
     }
 
-    // --- Render Table Functions ---
-    function renderTransferenciaTable(data) {
-        searchResultsTableBody.innerHTML = '';
+    // === RENDERIZAÇÃO DE TABELAS ===
+    const EMPTY_MSG = (cols) =>
+        `<tr><td colspan="${cols}" style="text-align:center;padding:1rem;color:#999;">
+            Nenhum produto encontrado.
+        </td></tr>`;
+
+    const SEARCH_HINT = (cols) =>
+        `<tr><td colspan="${cols}" style="text-align:center;padding:1rem;color:#999;">
+            Digite para pesquisar.
+        </td></tr>`;
+
+    function renderTransferenciaTable(data, hint = false) {
         tableHeadersRow.innerHTML = `
-            <th>Nome do produto</th>
-            <th>Unidade de Negócio</th>
-            <th>Segmento</th>
-            <th>Transferência Chat</th>
-            <th>Transferência Telefone</th>
-            <th>URA (Atual)</th>
-            <th>Fila distribuidor</th>
-        `;
+            <th>Nome do produto</th><th>Unidade de Negócio</th><th>Segmento</th>
+            <th>Transf. Chat</th><th>Transf. Telefone</th>
+            <th>URA (Atual)</th><th>Fila distribuidor</th>`;
 
-        if (data.length === 0) {
-            searchResultsTableBody.innerHTML = '<tr><td colspan="7">Nenhum produto de transferência encontrado.</td></tr>';
-            return;
-        }
+        if (hint) { searchResultsTableBody.innerHTML = SEARCH_HINT(7); return; }
+        if (!data || data.length === 0) { searchResultsTableBody.innerHTML = EMPTY_MSG(7); return; }
 
+        searchResultsTableBody.innerHTML = '';
         data.sort((a, b) => (a.produto || '').localeCompare(b.produto || ''));
-
         data.forEach(item => {
             const row = document.createElement('tr');
             row.dataset.itemData = JSON.stringify(item);
@@ -270,107 +289,110 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${item.segmento || ''}</td>
                 <td>${item.transferencia_chat || ''}</td>
                 <td>${item.transferencia_telefone || ''}</td>
-                <td>${item.ura || ''}</td>
-                <td>${item.fila_distribuidor || ''}</td>
-            `;
+                <td><strong>${item.ura || '—'}</strong></td>
+                <td>${item.fila_distribuidor || '—'}</td>`;
             searchResultsTableBody.appendChild(row);
         });
     }
 
-    function renderPhaseoutTable(data) {
+    function renderPhaseoutTable(data, hint = false) {
         tableHeadersRow.innerHTML = `
-        <th>Unidade</th>
-        <th>Segmento</th>
-        <th>Descrição</th>
-        <th>Modelo</th>
-        <th>Data Phase Out</th>
-        <th>Subst. Direto</th>
-        <th>Subst. Indireto</th>
-    `;
+            <th>Unidade</th><th>Segmento</th><th>Descrição</th><th>Modelo</th>
+            <th>Data Phase Out</th><th>Subst. Direto</th><th>Subst. Indireto</th>`;
+
+        if (hint) { searchResultsTableBody.innerHTML = SEARCH_HINT(7); return; }
+        if (!data || data.length === 0) { searchResultsTableBody.innerHTML = EMPTY_MSG(7); return; }
+
         searchResultsTableBody.innerHTML = '';
-
-        if (data.length === 0) {
-            searchResultsTableBody.innerHTML = '<tr><td colspan="7">Nenhum produto de phaseout encontrado.</td></tr>';
-            return;
-        }
-
         data.sort((a, b) => (a.descricao || '').localeCompare(b.descricao || ''));
-
         data.forEach(item => {
             const row = document.createElement('tr');
             row.dataset.itemData = JSON.stringify(item);
             row.innerHTML = `
-            <td>${item.unidade || ''}</td>
-            <td>${item.segmento || ''}</td>
-            <td>${item.descricao || ''}</td>
-            <td>${item.modelo || ''}</td>
-            <td>${item.data_phase_out || ''}</td>
-            <td>${item.descricao_subs_dir || ''}</td>
-            <td>${item.descricao_subs_ind || ''}</td>
-        `;
+                <td>${item.unidade || ''}</td>
+                <td>${item.segmento || ''}</td>
+                <td>${item.descricao || ''}</td>
+                <td>${item.modelo || ''}</td>
+                <td>${item.data_phase_out || ''}</td>
+                <td>${item.descricao_subs_dir || ''}</td>
+                <td>${item.descricao_subs_ind || ''}</td>`;
             searchResultsTableBody.appendChild(row);
         });
     }
 
-    // --- Lógica de busca ---
+    // === BUSCA ===
     function performSearch() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        if (searchTerm === '') {
-            searchResultsTableBody.innerHTML = '<tr><td colspan="7">Digite para pesquisar.</td></tr>';
+        const term = (searchInput.value || '').toLowerCase().trim();
+        if (!term) {
+            currentMode === 'transferencia'
+                ? renderTransferenciaTable([], true)
+                : renderPhaseoutTable([], true);
             return;
         }
 
         if (currentMode === 'transferencia') {
             const filtered = allTransferenciaData.filter(item =>
-                (item.produto && item.produto.toLowerCase().includes(searchTerm)) ||
-                (item.segmento && item.segmento.toLowerCase().includes(searchTerm)) ||
-                (item.unidade_negocio && item.unidade_negocio.toLowerCase().includes(searchTerm)) ||
-                (item.ura && item.ura.toLowerCase().includes(searchTerm))
+                Object.values(item).some(v => v && String(v).toLowerCase().includes(term))
             );
             renderTransferenciaTable(filtered);
-        } else if (currentMode === 'phaseout') {
+        } else {
             const filtered = allPhaseoutData.filter(item =>
-                (item.item && item.item.toLowerCase().includes(searchTerm)) ||
-                (item.descricao && item.descricao.toLowerCase().includes(searchTerm)) ||
-                (item.modelo && item.modelo.toLowerCase().includes(searchTerm))
+                Object.values(item).some(v => v && String(v).toLowerCase().includes(term))
             );
             renderPhaseoutTable(filtered);
         }
     }
 
-    // --- Display Detail Modals ---
-    function displayTransferenciaDetails(item) {
-        productInfoDetails.innerHTML = `
-            <div class="product-detail-item"><strong>Nome do produto:</strong> <span>${item.produto || ''}</span></div>
-            <div class="product-detail-item"><strong>Unidade de Negócio:</strong> <span>${item.unidade_negocio || ''}</span></div>
-            <div class="product-detail-item"><strong>Segmento:</strong> <span>${item.segmento || 'N/A'}</span></div>
-            <div class="product-detail-item">
-                <div><strong>Transferência Chat:</strong> <span>${item.transferencia_chat || ''}</span></div>
-                <button class="copy-button" data-text="${item.transferencia_chat || ''}">COPIAR</button>
-            </div>
-            <div class="product-detail-item">
-                <div><strong>Transferência Telefone:</strong> <span>${item.transferencia_telefone || ''}</span></div>
-                <button class="copy-button" data-text="${item.transferencia_telefone || ''}">COPIAR</button>
-            </div>
-            <div class="product-detail-item">
-                <div><strong>URA (Atual):</strong> <span>${item.ura || ''}</span></div>
-                <button class="copy-button" data-text="${item.ura || ''}">COPIAR</button>
-            </div>
-            <div class="product-detail-item">
-                <div><strong>Fila distribuidor:</strong> <span>${item.fila_distribuidor || ''}</span></div>
-                <button class="copy-button" data-text="${item.fila_distribuidor || ''}">COPIAR</button>
-            </div>
-        `;
-        openModal(sectorModalContainer);
-        sectorModalContainer.querySelectorAll('.copy-button').forEach(button => {
-            button.addEventListener('click', (e) => {
-                navigator.clipboard.writeText(e.target.dataset.text).then(() => {
-                    const originalText = e.target.textContent;
-                    e.target.textContent = 'COPIADO!';
-                    setTimeout(() => e.target.textContent = originalText, 1500);
-                });
+    // === DETALHES ===
+    function criarBotaoCopiar(texto) {
+        if (!texto || texto === '—') return '';
+        const safe = texto.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        return `<button class="copy-button" data-copy="${safe}">COPIAR</button>`;
+    }
+
+    function bindCopyButtons(container) {
+        container.querySelectorAll('.copy-button[data-copy]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const text = btn.dataset.copy;
+                const original = btn.textContent;
+                const done = () => { btn.textContent = 'COPIADO!'; setTimeout(() => btn.textContent = original, 1500); };
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(done).catch(() => fallback(text, done));
+                } else {
+                    fallback(text, done);
+                }
             });
         });
+    }
+
+    function fallback(text, done) {
+        const t = document.createElement('textarea');
+        t.value = text; t.style.position = 'fixed'; t.style.top = '-9999px';
+        document.body.appendChild(t); t.focus(); t.select();
+        try { document.execCommand('copy'); done(); } catch (_) { alert('Não foi possível copiar.'); }
+        t.remove();
+    }
+
+    function row(label, value) {
+        return `<div class="product-detail-item">
+            <div><strong>${label}:</strong> <span>${value || '—'}</span></div>
+            ${criarBotaoCopiar(value)}
+        </div>`;
+    }
+
+    function displayTransferenciaDetails(item) {
+        productInfoDetails.innerHTML = `
+            ${row('Nome do produto',        item.produto)}
+            ${row('Unidade de Negócio',     item.unidade_negocio)}
+            ${row('Segmento',               item.segmento)}
+            ${row('Transferência Chat',     item.transferencia_chat)}
+            ${row('Transferência Telefone', item.transferencia_telefone)}
+            ${row('URA (Atual)',            item.ura)}
+            ${row('Fila distribuidor',      item.fila_distribuidor)}
+        `;
+        bindCopyButtons(productInfoDetails);
+        closeModal(requestModalContainer);
+        openModal(sectorModalContainer);
     }
 
     function displayPhaseoutDetails(item) {
@@ -383,82 +405,93 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="phaseout-detail-item"><strong>Substituto Direto:</strong> <span>${item.descricao_subs_dir || ''}</span></div>
             <div class="phaseout-detail-item"><strong>Substituto Indicação:</strong> <span>${item.descricao_subs_ind || ''}</span></div>
         `;
+        closeModal(requestModalContainer);
         openModal(phaseoutInfoModalContainer);
     }
 
-    // --- Event Listeners ---
-    openTransferModalBtn.addEventListener('click', () => {
-        currentMode = 'transferencia';
-        requestModalTitle.textContent = 'Pesquisar Produto para Transferência';
-        searchInput.placeholder = 'Digite o nome, segmento, URA...';
-        searchInput.value = '';
-        renderTransferenciaTable([]);
-        searchResultsTableBody.innerHTML = '<tr><td colspan="7">Digite para pesquisar.</td></tr>';
-        openModal(requestModalContainer);
+    // === EVENTOS ===
+    if (openTransferModalBtn) {
+        openTransferModalBtn.addEventListener('click', () => {
+            currentMode = 'transferencia';
+            requestModalTitle.textContent = 'Pesquisar Produto para Transferência';
+            searchInput.placeholder = 'Nome do produto, segmento, URA...';
+            searchInput.value = '';
+            renderTransferenciaTable([], true);
+            openModal(requestModalContainer);
+            setTimeout(() => searchInput.focus(), 100);
+        });
+    }
+
+    if (openPhaseoutModalBtn) {
+        openPhaseoutModalBtn.addEventListener('click', () => {
+            currentMode = 'phaseout';
+            requestModalTitle.textContent = 'Pesquisar Phase Out';
+            searchInput.placeholder = 'Descrição, modelo, segmento...';
+            searchInput.value = '';
+            renderPhaseoutTable([], true);
+            openModal(requestModalContainer);
+            setTimeout(() => searchInput.focus(), 100);
+        });
+    }
+
+    if (sendRequestBtn) sendRequestBtn.addEventListener('click', performSearch);
+    if (searchInput) searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') performSearch(); });
+
+    if (searchResultsTableBody) {
+        searchResultsTableBody.addEventListener('click', e => {
+            const row = e.target.closest('tr');
+            if (!row || !row.dataset.itemData) return;
+            const item = JSON.parse(row.dataset.itemData);
+            if (currentMode === 'transferencia') displayTransferenciaDetails(item);
+            else displayPhaseoutDetails(item);
+        });
+    }
+
+    // Botões fechar
+    [
+        [closeRequestModalBtn,      requestModalContainer],
+        [closeSectorModalBtn,       sectorModalContainer],
+        [okSectorBtn,               sectorModalContainer],
+        [closePhaseoutInfoModalBtn, phaseoutInfoModalContainer],
+        [okPhaseoutBtn,             phaseoutInfoModalContainer],
+        [closeSuggestionModalBtn,   suggestionModalContainer],
+        [closeChatModalBtn,         chatModalContainer],
+        [okChatBtn,                 chatModalContainer],
+    ].forEach(([btn, modal]) => {
+        if (btn && modal) btn.addEventListener('click', () => closeModal(modal));
     });
 
-    openPhaseoutModalBtn.addEventListener('click', () => {
-        currentMode = 'phaseout';
-        requestModalTitle.textContent = 'Pesquisar Phase Out';
-        searchInput.placeholder = 'Digite o Item, Descrição ou Modelo...';
-        searchInput.value = '';
-        renderPhaseoutTable([]);
-        searchResultsTableBody.innerHTML = '<tr><td colspan="7">Digite para pesquisar.</td></tr>';
-        openModal(requestModalContainer);
-    });
+    if (openSuggestionIcon) openSuggestionIcon.addEventListener('click', () => openModal(suggestionModalContainer));
+    if (openChatIcon)       openChatIcon.addEventListener('click',       () => openModal(chatModalContainer));
 
-    sendRequestBtn.addEventListener('click', performSearch);
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') performSearch();
-    });
-
-    searchResultsTableBody.addEventListener('click', (event) => {
-        const row = event.target.closest('tr');
-        if (!row || !row.dataset.itemData) return;
-
-        const selectedItem = JSON.parse(row.dataset.itemData);
-        closeModal(requestModalContainer);
-        if (currentMode === 'transferencia') {
-            displayTransferenciaDetails(selectedItem);
-        } else if (currentMode === 'phaseout') {
-            displayPhaseoutDetails(selectedItem);
+    window.addEventListener('click', e => {
+        if (e.target.classList.contains('modal-container') && e.target.classList.contains('active')) {
+            closeModal(e.target);
         }
     });
 
-    [closeRequestModalBtn, okSectorBtn, closeSectorModalBtn, closePhaseoutInfoModalBtn, okPhaseoutBtn, closeSuggestionModalBtn, closeChatModalBtn, okChatBtn].forEach(btn => {
-        btn.addEventListener('click', () => {
-            closeModal(btn.closest('.modal-container'));
-        });
-    });
-
-    openSuggestionIcon.addEventListener('click', () => openModal(suggestionModalContainer));
-    openChatIcon.addEventListener('click', () => openModal(chatModalContainer));
-
-    window.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal-container')) closeModal(e.target);
-    });
-
     if (suggestionForm) {
-        suggestionForm.addEventListener('submit', async (e) => {
+        suggestionForm.addEventListener('submit', async e => {
             e.preventDefault();
-            const form = e.target;
             try {
-                const response = await fetch(form.action, {
-                    method: form.method,
-                    body: new FormData(form),
+                const res = await fetch(e.target.action, {
+                    method: 'POST',
+                    body: new FormData(e.target),
                     headers: { 'Accept': 'application/json' }
                 });
-                if (response.ok) {
+                if (res.ok) {
                     alert('Sugestão enviada com sucesso!');
-                    form.reset();
+                    e.target.reset();
                     closeModal(suggestionModalContainer);
-                } else alert('Houve um erro ao enviar sua sugestão.');
-            } catch (error) {
-                alert('Erro de conexão ao enviar sugestão.');
+                } else {
+                    alert('Erro ao enviar sugestão.');
+                }
+            } catch {
+                alert('Erro de conexão.');
             }
         });
     }
 
-    // Dispara a busca inicial
+    // Inicia o carregamento
     fetchAllData();
 });
