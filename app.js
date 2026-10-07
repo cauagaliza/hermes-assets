@@ -105,6 +105,24 @@ document.addEventListener('DOMContentLoaded', () => {
         'cftv ip':               'seguranca_cftv',
     };
 
+    // =========================================================================
+    // PHASE OUT — colunas exibidas, na ordem do cabeçalho da página
+    // Teste_hermes_phaseout. Lidas por nome normalizado (sem acento,
+    // minúsculo, sem pontuação); se o nome não bater, cai para a posição.
+    // =========================================================================
+    const PHASEOUT_COLUNAS = [
+        { campo: 'unidade',            rotulo: 'Unidade',              nome: 'unidade' },
+        { campo: 'segmento',           rotulo: 'Segmento',             nome: 'segmento' },
+        { campo: 'item',               rotulo: 'Item',                 nome: 'item' },
+        { campo: 'descricao',          rotulo: 'Descrição',            nome: 'descricao' },
+        { campo: 'modelo',             rotulo: 'Modelo',               nome: 'modelo' },
+        { campo: 'data_phase_out',     rotulo: 'Data Phase Out',       nome: 'data phase out' },
+        { campo: 'subs_dir',           rotulo: 'Substituto Direto',    nome: 'substituto direto' },
+        { campo: 'descricao_subs_dir', rotulo: 'Descrição Subs. Dir.', nome: 'descricao sust dir' },
+        { campo: 'subs_ind',           rotulo: 'Substituto Indicação', nome: 'substituto indicacao' },
+        { campo: 'descricao_subs_ind', rotulo: 'Descrição Subs. Ind.', nome: 'descricao subs ind' },
+    ];
+
     // === SEGURANÇA ===
     // Todo valor vindo das páginas da wiki é não confiável (qualquer editor
     // controla). Escape SEMPRE antes de interpolar em innerHTML.
@@ -128,6 +146,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function slugify(texto) {
         const palavras = normalizarChave(texto).split(' ').filter(p => p && !STOPWORDS_PT.has(p));
         return palavras.join('_').replace(/[^a-z0-9_]/g, '');
+    }
+
+    // Para cabeçalhos com pontuação (ex.: "Descrição Sust. Dir." → "descricao sust dir").
+    function normalizarNomeColuna(texto) {
+        return normalizarChave(texto).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
     function obterValorColuna(item, nomeAlvoNormalizado) {
@@ -246,17 +269,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Phase Out
             if (resP.ok) {
                 allPhaseoutData = parseCSV(await resP.text()).map(raw => {
-                    const vals = Object.values(raw);
-                    return {
-                        unidade:            vals[0] || '',
-                        segmento:           vals[1] || '',
-                        item:               vals[2] || '',
-                        descricao:          vals[3] || '',
-                        modelo:             vals[4] || '',
-                        data_phase_out:     vals[5] || '',
-                        descricao_subs_dir: vals[7] || '',
-                        descricao_subs_ind: vals[9] || '',
-                    };
+                    const chaves = Object.keys(raw);
+                    const item = {};
+                    PHASEOUT_COLUNAS.forEach((col, idx) => {
+                        const chave = chaves.find(c => normalizarNomeColuna(c) === col.nome) ?? chaves[idx];
+                        item[col.campo] = (chave !== undefined && raw[chave]) || '';
+                    });
+                    return item;
                 });
             }
 
@@ -330,26 +349,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPhaseoutTable(data, hint = false) {
-        tableHeadersRow.innerHTML = `
-            <th>Unidade</th><th>Segmento</th><th>Descrição</th><th>Modelo</th>
-            <th>Data Phase Out</th><th>Subst. Direto</th><th>Subst. Indireto</th>`;
+        const cols = PHASEOUT_COLUNAS.length;
+        tableHeadersRow.innerHTML = PHASEOUT_COLUNAS.map(col => `<th>${esc(col.rotulo)}</th>`).join('');
 
-        if (hint) { searchResultsTableBody.innerHTML = SEARCH_HINT(7); return; }
-        if (!data || data.length === 0) { searchResultsTableBody.innerHTML = EMPTY_MSG(7); return; }
+        if (hint) { searchResultsTableBody.innerHTML = SEARCH_HINT(cols); return; }
+        if (!data || data.length === 0) { searchResultsTableBody.innerHTML = EMPTY_MSG(cols); return; }
 
         searchResultsTableBody.innerHTML = '';
         data.sort((a, b) => (a.descricao || '').localeCompare(b.descricao || ''));
         data.forEach(item => {
             const row = document.createElement('tr');
             row.dataset.itemData = JSON.stringify(item);
-            row.innerHTML = `
-                <td>${esc(item.unidade)}</td>
-                <td>${esc(item.segmento)}</td>
-                <td>${esc(item.descricao)}</td>
-                <td>${esc(item.modelo)}</td>
-                <td>${esc(item.data_phase_out)}</td>
-                <td>${esc(item.descricao_subs_dir)}</td>
-                <td>${esc(item.descricao_subs_ind)}</td>`;
+            row.innerHTML = PHASEOUT_COLUNAS.map(col => `<td>${esc(item[col.campo])}</td>`).join('');
             searchResultsTableBody.appendChild(row);
         });
     }
@@ -429,15 +440,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayPhaseoutDetails(item) {
-        phaseoutInfoDetails.innerHTML = `
-            <div class="phaseout-detail-item"><strong>Unidade:</strong> <span>${esc(item.unidade)}</span></div>
-            <div class="phaseout-detail-item"><strong>Segmento:</strong> <span>${esc(item.segmento)}</span></div>
-            <div class="phaseout-detail-item"><strong>Descrição:</strong> <span>${esc(item.descricao)}</span></div>
-            <div class="phaseout-detail-item"><strong>Modelo:</strong> <span>${esc(item.modelo)}</span></div>
-            <div class="phaseout-detail-item"><strong>Data Phase Out:</strong> <span>${esc(item.data_phase_out)}</span></div>
-            <div class="phaseout-detail-item"><strong>Substituto Direto:</strong> <span>${esc(item.descricao_subs_dir)}</span></div>
-            <div class="phaseout-detail-item"><strong>Substituto Indicação:</strong> <span>${esc(item.descricao_subs_ind)}</span></div>
-        `;
+        phaseoutInfoDetails.innerHTML = PHASEOUT_COLUNAS.map(col =>
+            `<div class="phaseout-detail-item"><strong>${esc(col.rotulo)}:</strong> <span>${esc(item[col.campo])}</span></div>`
+        ).join('');
         closeModal(requestModalContainer);
         openModal(phaseoutInfoModalContainer);
     }
