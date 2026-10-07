@@ -40,25 +40,63 @@ document.addEventListener('DOMContentLoaded', () => {
     let allPhaseoutData = [];
     let currentMode = '';
 
-    // -------------------------------------------------------
-    // Mapas construídos a partir das Tabelas da Wiki:
-    // mapaUraByTime: timeAtendimento (slug da Tabela_ura) -> codigo URA (novo unificado)
-    // mapaFilaPorSegmento: segmento normalizado (texto da Tabela_gtc) -> fila
-    // -------------------------------------------------------
-    let mapaUraByTime = {};
-    let mapaFilaPorSegmento = {};
+    // =========================================================================
+    // ASSOCIAÇÃO URA + FILA DISTRIBUIDOR — 100% NO CÓDIGO, SEM TABELA AUXILIAR
+    //
+    // A tabela de Transferência na wiki só precisa ter as 5 colunas originais:
+    //   Nome do produto;Diretoria de Produto;Segmento;Transferencia Chat;Transferencia Telefone
+    //
+    // A chave "Transferência Telefone" já vem, na maioria dos produtos, com o
+    // slug da categoria de atendimento (ex.: "seguranca_cftv",
+    // "controle_acesso_corporativo"). É isso que usamos pra buscar aqui.
+    //
+    // Fonte: cruzamento de ~4.935 produtos reais da tabela de transferência
+    // (18 categorias confirmadas diretamente nos dados) + Exemplo A, aprovado
+    // por você, pras 8 categorias que ainda não tinham Fila preenchida.
+    // =========================================================================
+    const INFO_POR_TIME_ATENDIMENTO = {
+        // --- Confirmadas diretamente nos dados reais (URA e Fila já batiam) ---
+        'comunicacao_analogico':                 { ura: '433', fila: 'Telecom Dedicado' },
+        'comunicacao_hibrido':                   { ura: '449', fila: 'Telecom Dedicado' },
+        'controle_acesso_condominial_ip':        { ura: '450', fila: 'Condominial Dedicado' },
+        'controle_acesso_residencial':           { ura: '452', fila: 'Varejo Dedicado' },
+        'controle_acesso_sistemas_automatizados':{ ura: '464', fila: 'Controle de acesso Dedicado/ GTC Controle de Acesso SC' },
+        'energia':                                { ura: '482', fila: 'Energia Dedicado' },
+        'redes_cabeamento_estruturado':          { ura: '478', fila: 'Redes Dedicado' },
+        'redes_empresariais':                    { ura: '476', fila: 'Redes Dedicado' },
+        'redes_fibra_optica':                    { ura: '478', fila: 'Redes Dedicado' },
+        'seguranca_cftv':                        { ura: '458', fila: 'Seguranca Dedicado' },
+        'seguranca_linha_future_tmr':            { ura: '490', fila: 'Seguranca Dedicado' },
+        'solar_offgrid':                         { ura: '494', fila: 'Energia Dedicado' },
+        'solar_ongrid':                          { ura: '492', fila: 'Energia Dedicado' },
+        'varejo_comunicacao':                    { ura: '407', fila: 'Varejo Dedicado' },
+        'varejo_controle_acesso':                { ura: '453', fila: 'Varejo Dedicado' },
+        'varejo_energia':                        { ura: '484', fila: 'Varejo Dedicado' },
+        'varejo_mibo':                           { ura: '357', fila: 'Varejo Dedicado' },
+        'varejo_redes':                          { ura: '475', fila: 'Varejo Dedicado' },
 
-    // -------------------------------------------------------
-    // Correção manual: só é preciso preencher aqui se o slug gerado
-    // automaticamente a partir da coluna "Segmento" da tabela de
-    // Transferência não bater com a chave "Time atendimento" da
-    // Tabela_ura. O app avisa no console (F12) toda vez que isso
-    // acontece, com o segmento e o slug que ele tentou usar — é só
-    // copiar o slug tentado e apontar pro slug certo aqui.
-    // Formato: 'slug_tentado': 'slug_correto_na_tabela_ura'
-    // -------------------------------------------------------
-    const CORRECAO_SLUG_URA = {
-        // exemplo: 'controle_acesso_incendio_e_iluminacao': 'controle_acesso_incendio_iluminacao',
+        // --- Exemplo A: URA já existia nos dados, Fila preenchida por analogia (aprovado) ---
+        'controle_acesso_corporativo':           { ura: '466', fila: 'Controle de acesso Dedicado/ GTC Controle de Acesso SC' },
+        'seguranca_alarmes_sensores':            { ura: '454', fila: 'Alarmes Dedicado' },
+        'controle_acesso_incendio_iluminacao':   { ura: '461', fila: 'Controle de acesso Dedicado/ GTC Controle de Acesso SC' },
+        'varejo_casa_inteligente':               { ura: '493', fila: 'Varejo Dedicado' },
+        'controle_acesso_condominial_analogico': { ura: '451', fila: 'Condominial Dedicado' },
+        'comunicacao_perifericos':                { ura: '402', fila: 'Telecom Dedicado' },
+        'redes_5g':                               { ura: '478', fila: 'Redes Dedicado' },
+        'redes_home_office':                      { ura: '475', fila: 'Varejo Dedicado' }, // confirmado por você
+
+        // --- Extra, não confirmado nos dados atuais (categoria da Tabela_ura antiga,
+        //     não apareceu em nenhum produto na amostra analisada). Se aparecer um
+        //     "Transferência Telefone" = redes_linha_future, cai aqui; revise se precisar. ---
+        'redes_linha_future':                     { ura: '479', fila: 'Redes Dedicado' },
+
+        // -----------------------------------------------------------------------
+        // Categorias ainda sem URA/Fila definidas (produtos com "Transferência
+        // Telefone" vazio na planilha: RENOVIGI, parte de "Comunicacao HO",
+        // "Redes Opticas" sem slug, etc.). Quando a categoria for decidida,
+        // adicione aqui no mesmo formato. Até lá, esses produtos aparecem
+        // com "—" e um aviso no console (F12) apontando o Segmento exato.
+        // -----------------------------------------------------------------------
     };
 
     // === CSV HELPERS ===
@@ -70,8 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Converte um texto humano (ex.: "Controle De Acesso Condominial Ip")
     // num slug snake_case removendo palavras de ligação comuns em
-    // português, pra tentar bater com as chaves "Time atendimento" da
-    // Tabela_ura (ex.: "controle_acesso_condominial_ip").
+    // português. Usado só como FALLBACK, quando "Transferência Telefone"
+    // vem vazio — tenta inferir a categoria a partir do "Segmento".
     const STOPWORDS_PT = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
     function slugify(texto) {
         const palavras = normalizarChave(texto).split(' ').filter(p => p && !STOPWORDS_PT.has(p));
@@ -109,61 +147,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------
-    // Monta mapaUraByTime: timeAtendimento -> codigoNovo
+    // Resolve { ura, fila } de um produto:
+    // 1) tenta bater o valor cru de "Transferência Telefone" direto no
+    //    dicionário (é a chave mais confiável, já vem como slug pronto);
+    // 2) se vier vazio ou não bater, tenta um slug gerado a partir do
+    //    "Segmento" (fallback, cobre alguns casos sem telefone);
+    // 3) se nada bater, avisa no console com os dados exatos do produto
+    //    e devolve vazio (não quebra a página, só não preenche).
     // -------------------------------------------------------
-    function montarMapaUra(linhas) {
-        mapaUraByTime = {};
-        for (const linha of linhas) {
-            const time = obterValorColuna(linha, 'time atendimento').trim();
-            const codigoNovo = obterValorColuna(linha, 'novo codigo unificado').trim();
-            if (time) {
-                mapaUraByTime[time] = codigoNovo;
-            }
+    function resolverInfoUraFila(telefoneRaw, segmento, nomeProduto) {
+        const chaveDireta = (telefoneRaw || '').trim();
+        if (chaveDireta && INFO_POR_TIME_ATENDIMENTO[chaveDireta]) {
+            return INFO_POR_TIME_ATENDIMENTO[chaveDireta];
         }
-        console.log('[Hermes] mapaUraByTime:', mapaUraByTime);
-    }
 
-    // mapaFilaPorSegmento: segmento normalizado -> fila
-    function montarMapaGtc(linhas) {
-        mapaFilaPorSegmento = {};
-        for (const linha of linhas) {
-            const segmento = obterValorColuna(linha, 'segmento');
-            const chave = normalizarChave(segmento);
-            if (!chave) continue;
-            mapaFilaPorSegmento[chave] = obterValorColuna(linha, 'fila').trim();
-        }
-        console.log('[Hermes] mapaFilaPorSegmento:', mapaFilaPorSegmento);
-    }
-
-    // -------------------------------------------------------
-    // Resolve o código URA a partir do Segmento do produto
-    // (coluna "Segmento" da tabela de Transferência).
-    // -------------------------------------------------------
-    function resolverCodigoUra(segmento) {
         const slug = slugify(segmento);
-        if (mapaUraByTime[slug] !== undefined) return mapaUraByTime[slug];
-
-        const corrigido = CORRECAO_SLUG_URA[slug];
-        if (corrigido && mapaUraByTime[corrigido] !== undefined) return mapaUraByTime[corrigido];
+        if (slug && INFO_POR_TIME_ATENDIMENTO[slug]) {
+            return INFO_POR_TIME_ATENDIMENTO[slug];
+        }
 
         console.warn(
-            '[Hermes] Código URA não encontrado para segmento "' + segmento + '" ' +
-            '(slug tentado: "' + slug + '"). Adicione uma correção em CORRECAO_SLUG_URA se o ' +
-            'slug certo na Tabela_ura for diferente.'
+            '[Hermes] Sem URA/Fila cadastrada para "' + (nomeProduto || '?') + '" ' +
+            '(Segmento="' + segmento + '", Transferência Telefone="' + telefoneRaw + '"). ' +
+            'Adicione a categoria em INFO_POR_TIME_ATENDIMENTO no app.js.'
         );
-        return '';
-    }
-
-    // Resolve a Fila comparando o Segmento da Transferência diretamente
-    // com o Segmento da Tabela_gtc (ambos textos legíveis, então a
-    // comparação normalizada costuma bater sem precisar de mapa manual).
-    function resolverFila(segmento) {
-        const chave = normalizarChave(segmento);
-        const fila = mapaFilaPorSegmento[chave];
-        if (fila !== undefined) return fila;
-
-        console.warn('[Hermes] Fila não encontrada na Tabela_gtc para o segmento "' + segmento + '".');
-        return '';
+        return { ura: '', fila: '' };
     }
 
     // === TEMA ===
@@ -193,22 +201,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeModal(modal) { if (modal) modal.classList.remove('active'); }
 
     // === FETCH DADOS DA WIKI ===
+    // Só busca as duas tabelas de produto — nada de Tabela_ura/Tabela_gtc,
+    // a associação agora é 100% local, via INFO_POR_TIME_ATENDIMENTO.
     async function fetchAllData() {
         try {
-            // app.js é um arquivo externo (GitHub Pages), nunca passa pelo
-            // serializador de HTML da MediaWiki — não precisa do truque de
-            // montar '&' via String.fromCharCode aqui (isso só era
-            // necessário quando o JS ficava inline dentro da página wiki).
-            const [resT, resP, resUra, resGtc] = await Promise.all([
+            const [resT, resP] = await Promise.all([
                 fetch('https://suporte.intelbras.com.br/index.php?title=Teste_hermes_tranferencia&action=raw'),
                 fetch('https://suporte.intelbras.com.br/index.php?title=Teste_hermes_phaseout&action=raw'),
-                fetch('https://suporte.intelbras.com.br/index.php?title=Tabela_ura&action=raw'),
-                fetch('https://suporte.intelbras.com.br/index.php?title=Tabela_gtc&action=raw'),
             ]);
-
-            // Constrói os mapas primeiro (URA e GTC)
-            if (resUra.ok) montarMapaUra(parseCSV(await resUra.text()));
-            if (resGtc.ok) montarMapaGtc(parseCSV(await resGtc.text()));
 
             // Phase Out
             if (resP.ok) {
@@ -227,24 +227,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Transferência
-            // A chave de cruzamento agora é a coluna "Segmento" (texto
-            // legível, ex: "Energia Solar"), NÃO a "Transferência
-            // Telefone" (que é outro dado do produto, não um slug de
-            // categoria, e por isso nunca batia com a Tabela_ura).
+            // Transferência — só as 5 colunas originais; URA/Fila vêm do dicionário.
             if (resT.ok) {
                 allTransferenciaData = parseCSV(await resT.text()).map(raw => {
+                    const produto = obterValorColuna(raw, 'nome do produto');
                     const segmento = obterValorColuna(raw, 'segmento');
+                    const telefone = obterValorColuna(raw, 'transferencia telefone');
+                    const info = resolverInfoUraFila(telefone, segmento, produto);
+
                     return {
-                        produto: obterValorColuna(raw, 'nome do produto'),
-                        // CSV usa "Diretoria de Produto", exibimos como "Unidade de Negócio"
+                        produto: produto,
                         unidade_negocio: obterValorColuna(raw, 'diretoria de produto')
                                       || obterValorColuna(raw, 'unidade de negocio'),
                         segmento: segmento,
                         transferencia_chat: obterValorColuna(raw, 'transferencia chat'),
-                        transferencia_telefone: obterValorColuna(raw, 'transferencia telefone'),
-                        ura: resolverCodigoUra(segmento),
-                        fila_distribuidor: resolverFila(segmento),
+                        transferencia_telefone: telefone,
+                        ura: info.ura,
+                        fila_distribuidor: info.fila,
                     };
                 });
             }
