@@ -1,0 +1,23 @@
+# Segredos (Bot Password da wiki etc.) — nunca versionar
+.env
+.env.*
+!.env.example
+
+# Dados reais copiados da wiki/planilha — nunca versionar
+*.csv
+!tests/fixtures/*.csv
+
+# Node / ferramentas
+node_modules/
+coverage/
+reports/
+playwright-report/
+test-results/
+.stryker-tmp/
+dist/
+
+# SO / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
