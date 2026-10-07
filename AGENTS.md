@@ -81,13 +81,14 @@ Sem isso, navegador/CDN serve a versão antiga e o teste local diverge da wiki.
 ### 4.4 Regra URA / Fila
 - URA e Fila distribuidor são calculadas **somente pelo código**, a partir das 5 colunas.
 - **Não** adicionar colunas ao CSV, **não** popular manualmente, **não** usar script externo para preencher.
-- Produto sem categoria resolvida → `console.warn` com produto, segmento e telefone; a tela mostra `—`.
+- Produto sem categoria resolvida → a tela mostra `—` e, ao fim da carga, **um único** `console.warn`
+  agrupado por Segmento (lista completa em `console.debug`).
   **Nunca quebrar a página** por causa de um produto.
-- Ordem de resolução pretendida (ver §6 sobre o estado real):
+- Ordem de resolução (`resolverInfoUraFila`):
   1. valor cru de "Transferência Telefone" como chave do dicionário `INFO_POR_TIME_ATENDIMENTO`;
   2. fallback: `slugify(Segmento)` (remove acentos e `de/da/do/das/dos/e`);
-  3. fallback explícito `INFO_POR_SEGMENTO` (mapeamento confirmado em §9, ainda não implementado);
-  4. nada bateu → `console.warn` + `—`.
+  3. fallback explícito `INFO_POR_SEGMENTO` (Segmento normalizado → chave do dicionário; ver §9);
+  4. nada bateu → entra em `pendentes` + `—`.
 
 ### 4.5 Modais sobre a wiki
 `position: fixed` quebra quando um ancestral tem `transform`, `filter` ou `contain`.
@@ -147,9 +148,8 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 1. **Duas versões de `app.js` coexistem:**
    - **Publicada no GitHub Pages / commit `ff3e3cd`:** faz `fetch` de `Tabela_ura` e `Tabela_gtc` e
      resolve por `slugify(Segmento)`. Usuário confirmou (2026-10-06) que na wiki URA e Fila aparecem.
-   - **Cópia de trabalho (não commitada):** dicionário `INFO_POR_TIME_ATENDIMENTO` (27 categorias),
-     sem `fetch` das tabelas auxiliares. **Ainda não testada na wiki.** Ela é a direção escolhida.
-   - Ainda falta `INFO_POR_SEGMENTO` (fallback confirmado em §9) e trocar `Seguranca` → `Segurança Dedicado`.
+   - **PR da Issue #3:** dicionário `INFO_POR_TIME_ATENDIMENTO` + `INFO_POR_SEGMENTO` + "Segurança Dedicado",
+     sem `fetch` das tabelas auxiliares. Testado só em simulação com Node; **falta testar na wiki.**
 2. **`style.css` NÃO está escopado em `#hermes-app`.** Usa `body.dark-mode` e regras globais em
    `html`, `*`, `body` (`width: 100vw`, `display: flex`), `h1`, `main` — que afetam a página da wiki inteira.
 3. **Tema escuro quebrado:** `app.js` alterna `dark-mode` em `#hermes-app`, mas o snippet não tem

@@ -65,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'redes_cabeamento_estruturado':          { ura: '478', fila: 'Redes Dedicado' },
         'redes_empresariais':                    { ura: '476', fila: 'Redes Dedicado' },
         'redes_fibra_optica':                    { ura: '478', fila: 'Redes Dedicado' },
-        'seguranca_cftv':                        { ura: '458', fila: 'Seguranca Dedicado' },
-        'seguranca_linha_future_tmr':            { ura: '490', fila: 'Seguranca Dedicado' },
+        'seguranca_cftv':                        { ura: '458', fila: 'Segurança Dedicado' },
+        'seguranca_linha_future_tmr':            { ura: '490', fila: 'Segurança Dedicado' },
         'solar_offgrid':                         { ura: '494', fila: 'Energia Dedicado' },
         'solar_ongrid':                          { ura: '492', fila: 'Energia Dedicado' },
         'varejo_comunicacao':                    { ura: '407', fila: 'Varejo Dedicado' },
@@ -90,13 +90,23 @@ document.addEventListener('DOMContentLoaded', () => {
         //     "Transferência Telefone" = redes_linha_future, cai aqui; revise se precisar. ---
         'redes_linha_future':                     { ura: '479', fila: 'Redes Dedicado' },
 
-        // -----------------------------------------------------------------------
-        // Categorias ainda sem URA/Fila definidas (produtos com "Transferência
-        // Telefone" vazio na planilha: RENOVIGI, parte de "Comunicacao HO",
-        // "Redes Opticas" sem slug, etc.). Quando a categoria for decidida,
-        // adicione aqui no mesmo formato. Até lá, esses produtos aparecem
-        // com "—" e um aviso no console (F12) apontando o Segmento exato.
-        // -----------------------------------------------------------------------
+    };
+
+    // =========================================================================
+    // FALLBACK POR SEGMENTO — para produtos com "Transferência Telefone" vazio
+    // cujo slugify(Segmento) não bate com nenhuma chave acima.
+    // Chave: Segmento normalizado (sem acento, minúsculo). Valor: chave de
+    // INFO_POR_TIME_ATENDIMENTO. Mapeamento confirmado pelo dono em 2026-10-06.
+    // RENOVIGI fica de fora de propósito (sem categoria, mostra "—").
+    // =========================================================================
+    const INFO_POR_SEGMENTO = {
+        'comunicacao ho':        'redes_home_office',
+        'redes opticas':         'redes_fibra_optica',
+        'redes empresariais':    'redes_empresariais',
+        'cameras plug and play': 'varejo_mibo',
+        'fechaduras digitais':   'varejo_controle_acesso',
+        'energia ho':            'varejo_casa_inteligente',
+        'cftv ip':               'seguranca_cftv',
     };
 
     // === CSV HELPERS ===
@@ -152,10 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
     //    dicionário (é a chave mais confiável, já vem como slug pronto);
     // 2) se vier vazio ou não bater, tenta um slug gerado a partir do
     //    "Segmento" (fallback, cobre alguns casos sem telefone);
-    // 3) se nada bater, avisa no console com os dados exatos do produto
-    //    e devolve vazio (não quebra a página, só não preenche).
+    // 3) se não, tenta o Segmento normalizado em INFO_POR_SEGMENTO;
+    // 4) se nada bater, registra em `pendentes` (resumido no console ao
+    //    final da carga) e devolve vazio (não quebra a página, só não preenche).
     // -------------------------------------------------------
-    function resolverInfoUraFila(telefoneRaw, segmento, nomeProduto) {
+    function resolverInfoUraFila(telefoneRaw, segmento, nomeProduto, pendentes) {
         const chaveDireta = (telefoneRaw || '').trim();
         if (chaveDireta && INFO_POR_TIME_ATENDIMENTO[chaveDireta]) {
             return INFO_POR_TIME_ATENDIMENTO[chaveDireta];
@@ -166,12 +177,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return INFO_POR_TIME_ATENDIMENTO[slug];
         }
 
-        console.warn(
-            '[Hermes] Sem URA/Fila cadastrada para "' + (nomeProduto || '?') + '" ' +
-            '(Segmento="' + segmento + '", Transferência Telefone="' + telefoneRaw + '"). ' +
-            'Adicione a categoria em INFO_POR_TIME_ATENDIMENTO no app.js.'
-        );
+        const porSegmento = INFO_POR_SEGMENTO[normalizarChave(segmento)];
+        if (porSegmento && INFO_POR_TIME_ATENDIMENTO[porSegmento]) {
+            return INFO_POR_TIME_ATENDIMENTO[porSegmento];
+        }
+
+        pendentes.push({ produto: nomeProduto, segmento: segmento, telefone: telefoneRaw });
         return { ura: '', fila: '' };
+    }
+
+    // Um único aviso no console, agrupado por Segmento, em vez de um por produto.
+    function avisarPendentes(pendentes) {
+        if (pendentes.length === 0) return;
+        const porSegmento = {};
+        for (const p of pendentes) {
+            const chave = (p.segmento || '(vazio)') + ' | telefone="' + (p.telefone || '') + '"';
+            porSegmento[chave] = (porSegmento[chave] || 0) + 1;
+        }
+        console.warn(
+            '[Hermes] ' + pendentes.length + ' produto(s) sem URA/Fila (mostram "—"). ' +
+            'RENOVIGI é esperado. Para os demais, adicione a categoria em ' +
+            'INFO_POR_TIME_ATENDIMENTO ou o Segmento em INFO_POR_SEGMENTO no app.js.',
+            porSegmento
+        );
+        console.debug('[Hermes] Produtos sem URA/Fila:', pendentes);
     }
 
     // === TEMA ===
@@ -229,11 +258,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Transferência — só as 5 colunas originais; URA/Fila vêm do dicionário.
             if (resT.ok) {
+                const pendentes = [];
                 allTransferenciaData = parseCSV(await resT.text()).map(raw => {
                     const produto = obterValorColuna(raw, 'nome do produto');
                     const segmento = obterValorColuna(raw, 'segmento');
                     const telefone = obterValorColuna(raw, 'transferencia telefone');
-                    const info = resolverInfoUraFila(telefone, segmento, produto);
+                    const info = resolverInfoUraFila(telefone, segmento, produto, pendentes);
 
                     return {
                         produto: produto,
@@ -246,6 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         fila_distribuidor: info.fila,
                     };
                 });
+                avisarPendentes(pendentes);
             }
 
             console.log('[Hermes] ✅ Dados carregados!');
