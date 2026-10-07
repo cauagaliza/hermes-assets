@@ -24,10 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const suggestionModalContainer = document.getElementById('suggestion-modal-container');
     const closeSuggestionModalBtn = document.getElementById('close-suggestion-modal');
     const suggestionForm = document.getElementById('suggestion-form');
-    const openChatIcon = document.getElementById('open-chat-icon');
-    const chatModalContainer = document.getElementById('chat-modal-container');
-    const closeChatModalBtn = document.getElementById('close-chat-modal');
-    const okChatBtn = document.getElementById('ok-chat-btn');
 
     if (!hermesApp) {
         console.error('[Hermes] Elemento #hermes-app não encontrado na página. ' +
@@ -492,14 +488,11 @@ document.addEventListener('DOMContentLoaded', () => {
         [closePhaseoutInfoModalBtn, phaseoutInfoModalContainer],
         [okPhaseoutBtn,             phaseoutInfoModalContainer],
         [closeSuggestionModalBtn,   suggestionModalContainer],
-        [closeChatModalBtn,         chatModalContainer],
-        [okChatBtn,                 chatModalContainer],
     ].forEach(([btn, modal]) => {
         if (btn && modal) btn.addEventListener('click', () => closeModal(modal));
     });
 
     if (openSuggestionIcon) openSuggestionIcon.addEventListener('click', () => openModal(suggestionModalContainer));
-    if (openChatIcon)       openChatIcon.addEventListener('click',       () => openModal(chatModalContainer));
 
     window.addEventListener('click', e => {
         if (e.target.classList.contains('modal-container') && e.target.classList.contains('active')) {

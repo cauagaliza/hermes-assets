@@ -143,19 +143,14 @@ chrome do Vector e neutralizam `transform/filter/contain` nos ancestrais. **Não
 
 ## 6. Estado verificado do código (2026-10-06)
 
-Divergências entre o que foi descrito e o que **está de fato** no repositório (`main` @ `ff3e3cd`):
+Divergências entre o que foi descrito e o que **está de fato** no repositório:
 
-1. **Duas versões de `app.js` coexistem:**
-   - **Publicada no GitHub Pages / commit `ff3e3cd`:** faz `fetch` de `Tabela_ura` e `Tabela_gtc` e
-     resolve por `slugify(Segmento)`. Usuário confirmou (2026-10-06) que na wiki URA e Fila aparecem.
-   - **PR da Issue #3:** dicionário `INFO_POR_TIME_ATENDIMENTO` + `INFO_POR_SEGMENTO` + "Segurança Dedicado",
-     sem `fetch` das tabelas auxiliares. Testado só em simulação com Node; **falta testar na wiki.**
-2. **`style.css` NÃO está escopado em `#hermes-app`.** Usa `body.dark-mode` e regras globais em
-   `html`, `*`, `body` (`width: 100vw`, `display: flex`), `h1`, `main` — que afetam a página da wiki inteira.
-3. **Tema escuro quebrado:** `app.js` alterna `dark-mode` em `#hermes-app`, mas o snippet não tem
-   elemento com esse id e o CSS espera a classe no `body`. Resultado: `console.error` e tema sem efeito.
-4. O snippet local (agora versionado, Issue #1) não tinha `?v=N`, e contém `<html>/<head>/<body>` (o MediaWiki os descarta).
-5. Não há blur no fundo do modal (só `rgba(0,0,0,0.7)`).
+1. **URA/Fila por dicionário** (Issue #3) mesclado e **testado na wiki pelo usuário** (2026-10-06): funcionando.
+2. **`style.css` escopado em `#hermes-app`** (Issue #4), com o visual do layout antigo (fundo do modal
+   verde-água com blur, modal branco, rodapé abaixo dos botões). Só as regras `body:has(...)` são globais.
+3. **Tema escuro:** `app.js` alterna `dark-mode` em `#hermes-app` e o CSS usa `#hermes-app.dark-mode` (variáveis).
+4. O snippet é envolvido por `<div id="hermes-app">`, sem `<html>/<head>/<body>`; assets em `?v=4`.
+5. (resolvido no item 2)
 6. **XSS:** corrigido no PR da Issue #2. Todo valor do CSV passa por `esc()` antes de `innerHTML`.
    Regra: qualquer interpolação nova de dado em template HTML usa `esc()`.
 7. **Phase Out por posição confirmado:** `vals[0..5]`, `vals[7]`, `vals[9]` (6 e 8 ignorados).

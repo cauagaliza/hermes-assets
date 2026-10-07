@@ -1,383 +1,149 @@
-:root {
+/* Tudo escopado em #hermes-app para não afetar a página da wiki.
+   Exceção: as regras body:has(...) no fim, que precisam ser globais. */
+#hermes-app {
   --verde: #4CAF50;
   --verde-hover: #45a049;
-  --fundo-claro: #f4f4f4;
-  --texto-claro: #333;
-
-  /* Nova paleta de cores escuras (Preto) */
-  --fundo-escuro: #121212;
-  --fundo-modal-escuro: #1E1E1E;
-  --borda-escura: #333;
-  --superficie-escura: #2A2A2A;
-  --superficie-hover-escura: #383838;
-  --texto-escuro: #EAEAEA;
-  
   --cinza-escuro: #666;
   --cinza-claro: #ddd;
   --vermelho-fechar: #f44336;
-}
+  --texto: #333;
+  --fundo-modal: #fff;
+  --fundo-campo: #fff;
+  --fundo-thead: #f0f0f0;
+  --hover-linha: #e8f5e9;
 
-/* Reset básico para garantir consistência */
-html {
-  box-sizing: border-box;
-}
-*, *:before, *:after {
-  box-sizing: inherit;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: var(--fundo-claro);
-  color: var(--texto-claro);
-  transition: background-color 0.3s, color 0.3s;
+  color: var(--texto);
+  padding: 20px 10px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-body.dark-mode {
-  background-color: var(--fundo-escuro);
-  color: var(--texto-escuro);
-}
-
-.site-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 1.5rem 2.5rem;
-  width: 100%;
-}
-
-h1 {
-  font-size: 3.5rem;
-  font-weight: 600;
-  color: var(--verde);
-  margin-bottom: 5rem; 
-}
-
-main {
-  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; 
   align-items: center;
   width: 100%;
-  padding-top: 10vh; 
+  transition: background-color 0.3s, color 0.3s;
 }
 
-.main-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  align-items: center;
-  width: 100%;
+#hermes-app.dark-mode {
+  --cinza-claro: #333;
+  --texto: #EAEAEA;
+  --fundo-modal: #1E1E1E;
+  --fundo-campo: #2A2A2A;
+  --fundo-thead: #2A2A2A;
+  --hover-linha: #383838;
+  background-color: #121212;
+  border-radius: 8px;
 }
 
-.botao {
-  background-color: var(--verde);
-  color: #fff;
-  padding: 15px 30px;
-  border: none;
-  border-radius: 5px;
-  font-size: 1.2rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  min-width: 280px;
-  text-align: center;
-  width: auto;
+#hermes-app *, #hermes-app *:before, #hermes-app *:after { box-sizing: border-box; }
+
+#hermes-app .site-header { display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-bottom: 1rem; }
+#hermes-app .header-controls { display: flex; align-items: center; gap: 20px; }
+#hermes-app .site-header a { text-decoration: underline; color: var(--texto); font-weight: bold; font-size: 0.9rem; }
+
+#hermes-app #open-suggestion-icon, #hermes-app #theme-toggle-icon {
+  font-size: 1.5rem; color: var(--cinza-escuro); cursor: pointer; transition: 0.3s; user-select: none;
+}
+#hermes-app #open-suggestion-icon:hover, #hermes-app #theme-toggle-icon:hover { color: var(--verde); transform: scale(1.1); }
+
+#hermes-app main { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+#hermes-app h1 {
+  font-size: 3rem; font-weight: 600; color: var(--verde); margin-bottom: 2.5rem; margin-top: 0;
+  text-align: center; border-bottom: none; font-family: inherit;
 }
 
-.botao:hover {
-  background-color: var(--verde-hover);
-}
+#hermes-app .main-buttons { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; width: 100%; }
 
-.modal-container {
+#hermes-app .botao {
+  background-color: var(--verde); color: #fff; padding: 15px 30px; border: none;
+  border-radius: 5px; font-size: 1.2rem; font-weight: 500; cursor: pointer;
+  transition: background-color 0.3s ease; min-width: 280px; text-align: center;
+}
+#hermes-app .botao:hover { background-color: var(--verde-hover); }
+
+/* ---------- MODAL ---------- */
+#hermes-app .modal-container {
   display: none;
-  position: fixed;
-  z-index: 2147483646; /* Z-index super alto para sobrepor a wiki */
-  left: 0;
-  top: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.7);
+  position: fixed !important;
+  z-index: 2147483646 !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(3, 81, 68, 0.35) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
   justify-content: center;
   align-items: center;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#hermes-app .modal-container.active { display: flex !important; }
+
+#hermes-app .modal-content {
+  background-color: var(--fundo-modal); color: var(--texto); padding: 2rem 2.5rem; border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  width: 95%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative; animation: hermesFadeIn 0.3s; text-align: center;
+}
+#hermes-app .modal-content h2 { border-bottom: none; font-family: inherit; color: var(--texto); }
+
+@keyframes hermesFadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+#hermes-app .close-button {
+  position: absolute; top: 10px; right: 15px; font-size: 2rem; color: var(--cinza-escuro);
+  cursor: pointer; transition: 0.2s; line-height: 1;
+}
+#hermes-app .close-button:hover { color: var(--vermelho-fechar); transform: scale(1.1); }
+
+#hermes-app .form-group { margin-bottom: 1.5rem; text-align: left; }
+#hermes-app .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+#hermes-app .form-group input, #hermes-app .form-group textarea {
+  width: 100%; padding: 0.8rem 1rem; border-radius: 4px; border: 1px solid var(--cinza-claro); font-size: 1rem;
+  background-color: var(--fundo-campo); color: var(--texto);
+}
+#hermes-app .form-group input:focus, #hermes-app .form-group textarea:focus {
+  outline: none; border-color: var(--verde); box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
-.modal-container.active {
-    display: flex;
+#hermes-app #product-info-details, #hermes-app #phaseout-info-details {
+  text-align: left; margin: 1rem 0 2rem 0; border: 1px solid var(--cinza-claro); padding: 1rem 1.5rem; border-radius: 8px;
 }
+#hermes-app .product-detail-item, #hermes-app .phaseout-detail-item {
+  padding: 0.8rem 0; border-bottom: 1px solid var(--cinza-claro); font-size: 1rem;
+}
+#hermes-app .product-detail-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+#hermes-app #product-info-details > div:last-child,
+#hermes-app #phaseout-info-details > div:last-child { border-bottom: none; }
 
-.modal-content {
-  background-color: var(--fundo-claro);
-  padding: 2rem 2.5rem;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 1000px; /* Aumentado para a tabela caber melhor */
-  position: relative;
-  animation: fadeIn 0.3s;
-  text-align: center;
-  transition: background-color 0.3s, color 0.3s;
-}
+#hermes-app #custom-footer-phrase { margin-top: 40px; color: var(--cinza-escuro); font-size: 0.8rem; text-align: center; }
 
-body.dark-mode .modal-content {
-  background-color: var(--fundo-modal-escuro);
-  color: var(--texto-escuro);
-  border: 1px solid var(--borda-escura);
+/* ---------- TABELA ---------- */
+#hermes-app #search-results-table-container {
+  margin-top: 20px; max-height: 50vh; overflow: auto;
+  border: 1px solid var(--cinza-claro); border-radius: 5px;
 }
+#hermes-app .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; white-space: nowrap; margin: 0; border: none; background: none; }
+#hermes-app .data-table th, #hermes-app .data-table td {
+  padding: 12px 15px; text-align: left; border: none; border-bottom: 1px solid var(--cinza-claro);
+}
+#hermes-app .data-table thead th { background-color: var(--fundo-thead); position: sticky; top: 0; z-index: 10; }
+#hermes-app .data-table tbody tr { cursor: pointer; transition: 0.2s; }
+#hermes-app .data-table tbody tr:hover { background-color: var(--hover-linha); }
+#hermes-app .data-table tbody tr:last-child td { border-bottom: none; }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
+#hermes-app .copy-button {
+  padding: 5px 10px; font-size: 0.8rem; background-color: var(--cinza-claro);
+  border: 1px solid var(--cinza-escuro); color: var(--texto); border-radius: 4px;
+  cursor: pointer; font-weight: bold; transition: all 0.2s;
 }
+#hermes-app .copy-button:hover { background-color: var(--cinza-escuro); color: #fff; }
 
-.close-button {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 1.8rem;
-  color: var(--cinza-escuro);
-  cursor: pointer;
-  transition: color 0.2s, transform 0.2s;
-}
-
-body.dark-mode .close-button {
-  color: var(--cinza-claro);
-}
-
-.close-button:hover {
-  color: var(--vermelho-fechar);
-  transform: scale(1.1);
-}
-
-.modal-content h2, .modal-content p {
-  margin-bottom: 1.5rem;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-  text-align: left;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.form-group input, .form-group textarea {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border-radius: 4px;
-  border: 1px solid var(--cinza-claro);
-  font-size: 1rem;
-  background-color: #fff;
-  color: #333;
-}
-
-body.dark-mode .form-group input, body.dark-mode .form-group textarea {
-  background-color: var(--superficie-escura);
-  color: var(--texto-escuro);
-  border-color: var(--borda-escura);
-}
-
-.form-group input:focus, .form-group textarea:focus {
-  outline: none;
-  border-color: var(--verde);
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-}
-
-#product-info-details, #phaseout-info-details, #chat-info-details {
-  text-align: left;
-  margin: 1rem 0 2rem 0;
-  border: 1px solid var(--cinza-claro);
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-}
-
-body.dark-mode #product-info-details, body.dark-mode #phaseout-info-details, body.dark-mode #chat-info-details {
-  border-color: var(--borda-escura);
-  background-color: var(--superficie-escura);
-}
-
-.info-line, .product-detail-item, .phaseout-detail-item {
-  padding: 0.8rem 0;
-  font-size: 1rem;
-  border-bottom: 1px solid var(--cinza-claro);
-}
-
-body.dark-mode .info-line, body.dark-mode .product-detail-item, body.dark-mode .phaseout-detail-item {
-  border-color: var(--borda-escura);
-}
-
-.product-detail-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-#product-info-details div:last-child, #phaseout-info-details div:last-child, #chat-info-details div:last-child {
-  border-bottom: none;
-}
-
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-}
-
-#open-suggestion-icon, #theme-toggle-icon {
-    font-size: 1.6rem;
-    color: var(--cinza-escuro);
-    cursor: pointer;
-    transition: color 0.3s, transform 0.3s;
-    user-select: none;
-}
-body.dark-mode #open-suggestion-icon, body.dark-mode #theme-toggle-icon {
-    color: var(--cinza-claro);
-}
-
-#open-suggestion-icon:hover, #theme-toggle-icon:hover {
-    color: var(--verde);
-    transform: scale(1.1);
-}
-
-#open-chat-icon {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    z-index: 999;
-    transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s;
-    background-color: #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-body.dark-mode #open-chat-icon {
-    background-color: var(--fundo-modal-escuro);
-}
-
-#open-chat-icon:hover {
-    transform: scale(1.1);
-}
-
-#open-chat-icon svg {
-    width: 28px;
-    height: 28px;
-    fill: #333;
-    transition: fill 0.3s;
-}
-
-body.dark-mode #open-chat-icon svg {
-    fill: var(--texto-escuro);
-}
-
-#custom-footer-phrase {
-  position: fixed;
-  bottom: 1.5rem;
-  left: 2.5rem;
-  color: var(--cinza-escuro);
-  font-size: 0.8rem;
-  z-index: 999;
-}
-body.dark-mode #custom-footer-phrase {
-  color: #777;
-}
-
-/* Tabela de Resultados */
-#search-results-table-container {
-    margin-top: 20px;
-    max-height: 50vh;
-    overflow-y: auto;
-    border: 1px solid var(--cinza-claro);
-    border-radius: 5px;
-}
-
-body.dark-mode #search-results-table-container {
-    border-color: var(--borda-escura);
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-}
-
-.data-table th, .data-table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid var(--cinza-claro);
-}
-body.dark-mode .data-table th, body.dark-mode .data-table td {
-    border-bottom: 1px solid var(--borda-escura);
-}
-
-.data-table thead th {
-    background-color: #f0f0f0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-body.dark-mode .data-table thead th {
-    background-color: var(--superficie-escura);
-}
-
-.data-table tbody tr {
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.data-table tbody tr:hover {
-    background-color: #e8f5e9;
-}
-body.dark-mode .data-table tbody tr:hover {
-    background-color: var(--superficie-hover-escura);
-}
-
-.data-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.copy-button {
-  padding: 5px 10px;
-  font-size: 0.8rem;
-  background-color: var(--cinza-claro);
-  border: 1px solid var(--cinza-escuro);
-  color: #333;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s;
-}
-body.dark-mode .copy-button {
-    background-color: var(--superficie-escura);
-    border-color: #555;
-    color: var(--texto-escuro);
-}
-
-.copy-button:hover {
-  background-color: var(--cinza-escuro);
-  color: #fff;
-}
-body.dark-mode .copy-button:hover {
-    background-color: var(--superficie-hover-escura);
-}
-
-/* Regras Globais da Wiki - Esconde os menus nativos quando modal aberto */
+/* ---------- GLOBAIS: só com modal aberto ----------
+   Escondem o chrome da wiki, neutralizam transform/filter/contain dos
+   ancestrais (quebram position:fixed) e travam o scroll. */
 body:has(.modal-container.active) { overflow: hidden; }
 
 body:has(.modal-container.active) #mw-page-base,
@@ -387,11 +153,38 @@ body:has(.modal-container.active) #mw-panel,
 body:has(.modal-container.active) #mw-head,
 body:has(.modal-container.active) #p-logo,
 body:has(.modal-container.active) #p-navigation,
+body:has(.modal-container.active) #p-tb,
+body:has(.modal-container.active) #p-personal,
+body:has(.modal-container.active) #p-search,
+body:has(.modal-container.active) #p-cactions,
+body:has(.modal-container.active) #left-navigation,
+body:has(.modal-container.active) #right-navigation,
 body:has(.modal-container.active) #footer,
 body:has(.modal-container.active) .vector-header,
+body:has(.modal-container.active) .vector-sticky-header,
 body:has(.modal-container.active) .vector-main-menu,
+body:has(.modal-container.active) .vector-page-tools,
+body:has(.modal-container.active) .vector-column-start,
+body:has(.modal-container.active) .vector-column-end,
+body:has(.modal-container.active) .vector-toc,
+body:has(.modal-container.active) #vector-toc,
+body:has(.modal-container.active) #vector-main-menu,
+body:has(.modal-container.active) #vector-page-tools,
+body:has(.modal-container.active) #vector-sticky-header,
+body:has(.modal-container.active) #vector-main-menu-pinned-container,
+body:has(.modal-container.active) #vector-page-tools-pinned-container,
+body:has(.modal-container.active) .mw-header,
+body:has(.modal-container.active) .mw-footer,
 body:has(.modal-container.active) .mw-sidebar,
-body:has(.modal-container.active) .mw-logo {
+body:has(.modal-container.active) .mw-logo,
+body:has(.modal-container.active) #mw-site-navigation,
+body:has(.modal-container.active) #mw-related-navigation,
+body:has(.modal-container.active) #siteNotice,
+body:has(.modal-container.active) #siteSub,
+body:has(.modal-container.active) #contentSub,
+body:has(.modal-container.active) #jump-to-nav,
+body:has(.modal-container.active) .mw-indicators,
+body:has(.modal-container.active) #mw-indicator-mw-helplink {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -399,7 +192,11 @@ body:has(.modal-container.active) .mw-logo {
 
 body:has(.modal-container.active) .mw-parser-output,
 body:has(.modal-container.active) #content,
-body:has(.modal-container.active) .mw-body {
+body:has(.modal-container.active) #mw-content-text,
+body:has(.modal-container.active) #bodyContent,
+body:has(.modal-container.active) #contenttext,
+body:has(.modal-container.active) .mw-body,
+body:has(.modal-container.active) .mw-body-content {
   transform: none !important;
   filter: none !important;
   perspective: none !important;
