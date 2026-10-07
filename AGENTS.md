@@ -149,14 +149,14 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 2. **`style.css` escopado em `#hermes-app`** (Issue #4), com o visual do layout antigo (fundo do modal
    verde-água com blur, modal branco, rodapé abaixo dos botões). Só as regras `body:has(...)` são globais.
 3. **Tema escuro:** `app.js` alterna `dark-mode` em `#hermes-app` e o CSS usa `#hermes-app.dark-mode` (variáveis).
-4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=5`.
+4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=6` (Phase Out com todas as colunas).
    **O `<html>…</html>` é obrigatório:** é a tag do `$wgRawHtml` que faz a wiki aceitar HTML cru.
    Sem ele, a wiki mostra as tags como texto e nada funciona (aconteceu em 2026-10-06).
    Modal da tabela (Issue #21) cresce com as colunas (`max-content`, limite 95vw); **testado na wiki pelo usuário** (2026-10-06).
 5. (resolvido no item 2)
 6. **XSS:** corrigido no PR da Issue #2. Todo valor do CSV passa por `esc()` antes de `innerHTML`.
    Regra: qualquer interpolação nova de dado em template HTML usa `esc()`.
-7. **Phase Out por posição confirmado:** `vals[0..5]`, `vals[7]`, `vals[9]` (6 e 8 ignorados).
+7. **Phase Out por nome de coluna** (Issue #5): `PHASEOUT_COLUNAS` no `app.js` lista as 10 colunas (nome normalizado, sem pontuação; fallback por posição). Tabela e modal de detalhes mostram todas.
 8. Data do rodapé (`09/07/2026`) hardcoded no snippet.
 9. Mensagem "Digite para pesquisar." ativa via `SEARCH_HINT`.
 10. Não existe `.gitignore` (logo, `.env` **não** está ignorado).
@@ -190,7 +190,7 @@ Lista viva: `gh issue list`. Labels: `tipo: correção|melhoria|nova função|in
 Consulte antes de mexer nestes pontos. Ao serem respondidas, mova para §9.
 
 1. Data do rodapé: de onde vem a fonte única? (Issue #7)
-2. Cabeçalho exato da página `Teste_hermes_phaseout` (Issue #5).
+2. (resolvida: ver §9, cabeçalho do Phase Out)
 3. Valor atual de `?v=N` no snippet publicado na wiki (a wiki exige login; não dá para ler sem credencial).
 
 ## 9. Decisões tomadas
@@ -223,4 +223,5 @@ Confirmadas pelo usuário em 2026-10-06:
 - GitHub Pages: branch `main`, pasta `/` (raiz), build `legacy`. Merge na `main` = deploy.
 - A wiki exige login: `action=raw` sem sessão redireciona para `Especial:Autenticar-se`.
   Acesso por agentes só via Bot Password no `.env` (§4.7).
+- **Cabeçalho do Phase Out** (2026-10-07): `Unidade;Segmento;Item;Descrição;Modelo;Data Phase out;Substituto direto;Descrição Sust. Dir.;Substituto Indicação;Descrição Subs. Ind.`. Todas as colunas aparecem na tabela.
 - Interpretação dos pedidos: "datalog" = Datadog; "Comilint" = commitlint; "Stryke" = Stryker.
