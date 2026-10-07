@@ -22,27 +22,16 @@
   transition: background-color 0.3s, color 0.3s;
 }
 
-#hermes-app.dark-mode {
-  --cinza-claro: #333;
-  --texto: #EAEAEA;
-  --fundo-modal: #1E1E1E;
-  --fundo-campo: #2A2A2A;
-  --fundo-thead: #2A2A2A;
-  --hover-linha: #383838;
-  background-color: #121212;
-  border-radius: 8px;
-}
-
 #hermes-app *, #hermes-app *:before, #hermes-app *:after { box-sizing: border-box; }
 
 #hermes-app .site-header { display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-bottom: 1rem; }
 #hermes-app .header-controls { display: flex; align-items: center; gap: 20px; }
 #hermes-app .site-header a { text-decoration: underline; color: var(--texto); font-weight: bold; font-size: 0.9rem; }
 
-#hermes-app #open-suggestion-icon, #hermes-app #theme-toggle-icon {
+#hermes-app #open-suggestion-icon {
   font-size: 1.5rem; color: var(--cinza-escuro); cursor: pointer; transition: 0.3s; user-select: none;
 }
-#hermes-app #open-suggestion-icon:hover, #hermes-app #theme-toggle-icon:hover { color: var(--verde); transform: scale(1.1); }
+#hermes-app #open-suggestion-icon:hover { color: var(--verde); transform: scale(1.1); }
 
 #hermes-app main { display: flex; flex-direction: column; align-items: center; width: 100%; }
 

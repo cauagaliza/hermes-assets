@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     const hermesApp = document.getElementById('hermes-app');
-    const themeToggleIcon = document.getElementById('theme-toggle-icon');
 
     // UI Elements
     const openTransferModalBtn = document.getElementById('open-transfer-modal-btn');
@@ -228,28 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
             porSegmento
         );
         console.debug('[Hermes] Produtos sem URA/Fila:', pendentes);
-    }
-
-    // === TEMA ===
-    function setTheme(theme) {
-        if (!hermesApp) return;
-        if (theme === 'dark') {
-            hermesApp.classList.add('dark-mode');
-            if (themeToggleIcon) themeToggleIcon.textContent = '🌙';
-        } else {
-            hermesApp.classList.remove('dark-mode');
-            if (themeToggleIcon) themeToggleIcon.textContent = '☀️';
-        }
-        localStorage.setItem('hermes-theme', theme);
-    }
-
-    const savedTheme = localStorage.getItem('hermes-theme') || 'dark';
-    setTheme(savedTheme);
-
-    if (themeToggleIcon) {
-        themeToggleIcon.addEventListener('click', () => {
-            setTheme(hermesApp && hermesApp.classList.contains('dark-mode') ? 'light' : 'dark');
-        });
     }
 
     // === MODAIS ===
