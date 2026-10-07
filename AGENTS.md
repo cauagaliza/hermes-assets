@@ -152,6 +152,7 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=5`.
    **O `<html>…</html>` é obrigatório:** é a tag do `$wgRawHtml` que faz a wiki aceitar HTML cru.
    Sem ele, a wiki mostra as tags como texto e nada funciona (aconteceu em 2026-10-06).
+   Modal da tabela (Issue #21) cresce com as colunas (`max-content`, limite 95vw); **testado na wiki pelo usuário** (2026-10-06).
 5. (resolvido no item 2)
 6. **XSS:** corrigido no PR da Issue #2. Todo valor do CSV passa por `esc()` antes de `innerHTML`.
    Regra: qualquer interpolação nova de dado em template HTML usa `esc()`.
