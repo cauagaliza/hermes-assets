@@ -109,6 +109,14 @@ document.addEventListener('DOMContentLoaded', () => {
         'cftv ip':               'seguranca_cftv',
     };
 
+    // === SEGURANÇA ===
+    // Todo valor vindo das páginas da wiki é não confiável (qualquer editor
+    // controla). Escape SEMPRE antes de interpolar em innerHTML.
+    const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    function esc(valor) {
+        return String(valor == null ? '' : valor).replace(/[&<>"']/g, c => ESC_MAP[c]);
+    }
+
     // === CSV HELPERS ===
     function normalizarChave(texto) {
         return (texto || '').toString()
@@ -314,13 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             row.dataset.itemData = JSON.stringify(item);
             row.innerHTML = `
-                <td>${item.produto || ''}</td>
-                <td>${item.unidade_negocio || ''}</td>
-                <td>${item.segmento || ''}</td>
-                <td>${item.transferencia_chat || ''}</td>
-                <td>${item.transferencia_telefone || ''}</td>
-                <td><strong>${item.ura || '—'}</strong></td>
-                <td>${item.fila_distribuidor || '—'}</td>`;
+                <td>${esc(item.produto)}</td>
+                <td>${esc(item.unidade_negocio)}</td>
+                <td>${esc(item.segmento)}</td>
+                <td>${esc(item.transferencia_chat)}</td>
+                <td>${esc(item.transferencia_telefone)}</td>
+                <td><strong>${esc(item.ura || '—')}</strong></td>
+                <td>${esc(item.fila_distribuidor || '—')}</td>`;
             searchResultsTableBody.appendChild(row);
         });
     }
@@ -339,13 +347,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             row.dataset.itemData = JSON.stringify(item);
             row.innerHTML = `
-                <td>${item.unidade || ''}</td>
-                <td>${item.segmento || ''}</td>
-                <td>${item.descricao || ''}</td>
-                <td>${item.modelo || ''}</td>
-                <td>${item.data_phase_out || ''}</td>
-                <td>${item.descricao_subs_dir || ''}</td>
-                <td>${item.descricao_subs_ind || ''}</td>`;
+                <td>${esc(item.unidade)}</td>
+                <td>${esc(item.segmento)}</td>
+                <td>${esc(item.descricao)}</td>
+                <td>${esc(item.modelo)}</td>
+                <td>${esc(item.data_phase_out)}</td>
+                <td>${esc(item.descricao_subs_dir)}</td>
+                <td>${esc(item.descricao_subs_ind)}</td>`;
             searchResultsTableBody.appendChild(row);
         });
     }
@@ -376,8 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === DETALHES ===
     function criarBotaoCopiar(texto) {
         if (!texto || texto === '—') return '';
-        const safe = texto.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-        return `<button class="copy-button" data-copy="${safe}">COPIAR</button>`;
+        return `<button class="copy-button" data-copy="${esc(texto)}">COPIAR</button>`;
     }
 
     function bindCopyButtons(container) {
@@ -405,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function row(label, value) {
         return `<div class="product-detail-item">
-            <div><strong>${label}:</strong> <span>${value || '—'}</span></div>
+            <div><strong>${label}:</strong> <span>${esc(value || '—')}</span></div>
             ${criarBotaoCopiar(value)}
         </div>`;
     }
@@ -427,13 +434,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayPhaseoutDetails(item) {
         phaseoutInfoDetails.innerHTML = `
-            <div class="phaseout-detail-item"><strong>Unidade:</strong> <span>${item.unidade || ''}</span></div>
-            <div class="phaseout-detail-item"><strong>Segmento:</strong> <span>${item.segmento || ''}</span></div>
-            <div class="phaseout-detail-item"><strong>Descrição:</strong> <span>${item.descricao || ''}</span></div>
-            <div class="phaseout-detail-item"><strong>Modelo:</strong> <span>${item.modelo || ''}</span></div>
-            <div class="phaseout-detail-item"><strong>Data Phase Out:</strong> <span>${item.data_phase_out || ''}</span></div>
-            <div class="phaseout-detail-item"><strong>Substituto Direto:</strong> <span>${item.descricao_subs_dir || ''}</span></div>
-            <div class="phaseout-detail-item"><strong>Substituto Indicação:</strong> <span>${item.descricao_subs_ind || ''}</span></div>
+            <div class="phaseout-detail-item"><strong>Unidade:</strong> <span>${esc(item.unidade)}</span></div>
+            <div class="phaseout-detail-item"><strong>Segmento:</strong> <span>${esc(item.segmento)}</span></div>
+            <div class="phaseout-detail-item"><strong>Descrição:</strong> <span>${esc(item.descricao)}</span></div>
+            <div class="phaseout-detail-item"><strong>Modelo:</strong> <span>${esc(item.modelo)}</span></div>
+            <div class="phaseout-detail-item"><strong>Data Phase Out:</strong> <span>${esc(item.data_phase_out)}</span></div>
+            <div class="phaseout-detail-item"><strong>Substituto Direto:</strong> <span>${esc(item.descricao_subs_dir)}</span></div>
+            <div class="phaseout-detail-item"><strong>Substituto Indicação:</strong> <span>${esc(item.descricao_subs_ind)}</span></div>
         `;
         closeModal(requestModalContainer);
         openModal(phaseoutInfoModalContainer);

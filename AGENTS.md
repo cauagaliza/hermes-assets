@@ -156,8 +156,8 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
    elemento com esse id e o CSS espera a classe no `body`. Resultado: `console.error` e tema sem efeito.
 4. O snippet local (agora versionado, Issue #1) não tinha `?v=N`, e contém `<html>/<head>/<body>` (o MediaWiki os descarta).
 5. Não há blur no fundo do modal (só `rgba(0,0,0,0.7)`).
-6. **XSS confirmado:** `renderTransferenciaTable`, `renderPhaseoutTable`, `row()` e `displayPhaseoutDetails`
-   interpolam valores do CSV em `innerHTML`.
+6. **XSS:** corrigido no PR da Issue #2. Todo valor do CSV passa por `esc()` antes de `innerHTML`.
+   Regra: qualquer interpolação nova de dado em template HTML usa `esc()`.
 7. **Phase Out por posição confirmado:** `vals[0..5]`, `vals[7]`, `vals[9]` (6 e 8 ignorados).
 8. Data do rodapé (`09/07/2026`) hardcoded no snippet.
 9. Mensagem "Digite para pesquisar." ativa via `SEARCH_HINT`.
