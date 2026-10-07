@@ -149,7 +149,7 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 2. **`style.css` escopado em `#hermes-app`** (Issue #4), com o visual do layout antigo (fundo do modal
    verde-água com blur, modal branco, rodapé abaixo dos botões). Só as regras `body:has(...)` são globais.
 3. **Tema escuro:** `app.js` alterna `dark-mode` em `#hermes-app` e o CSS usa `#hermes-app.dark-mode` (variáveis).
-4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=4`.
+4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=5`.
    **O `<html>…</html>` é obrigatório:** é a tag do `$wgRawHtml` que faz a wiki aceitar HTML cru.
    Sem ele, a wiki mostra as tags como texto e nada funciona (aconteceu em 2026-10-06).
 5. (resolvido no item 2)

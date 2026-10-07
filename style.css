@@ -82,8 +82,11 @@
 #hermes-app .modal-content {
   background-color: var(--fundo-modal); color: var(--texto); padding: 2rem 2.5rem; border-radius: 8px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  width: 95%;
-  max-width: 1000px;
+  /* Cresce com as colunas da tabela; rolagem horizontal só acima de 95vw. */
+  width: max-content;
+  min-width: min(1000px, 95vw);
+  max-width: 95vw;
+  box-sizing: border-box;
   max-height: 90vh;
   overflow-y: auto;
   position: relative; animation: hermesFadeIn 0.3s; text-align: center;
