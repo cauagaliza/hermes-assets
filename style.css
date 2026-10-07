@@ -108,26 +108,17 @@
   outline: none; border-color: var(--verde); box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
-#hermes-app #product-info-details, #hermes-app #phaseout-info-details, #hermes-app #chat-info-details {
+#hermes-app #product-info-details, #hermes-app #phaseout-info-details {
   text-align: left; margin: 1rem 0 2rem 0; border: 1px solid var(--cinza-claro); padding: 1rem 1.5rem; border-radius: 8px;
 }
-#hermes-app .info-line, #hermes-app .product-detail-item, #hermes-app .phaseout-detail-item {
+#hermes-app .product-detail-item, #hermes-app .phaseout-detail-item {
   padding: 0.8rem 0; border-bottom: 1px solid var(--cinza-claro); font-size: 1rem;
 }
 #hermes-app .product-detail-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 #hermes-app #product-info-details > div:last-child,
-#hermes-app #phaseout-info-details > div:last-child,
-#hermes-app #chat-info-details > div:last-child { border-bottom: none; }
+#hermes-app #phaseout-info-details > div:last-child { border-bottom: none; }
 
 #hermes-app #custom-footer-phrase { margin-top: 40px; color: var(--cinza-escuro); font-size: 0.8rem; text-align: center; }
-
-#hermes-app #open-chat-icon {
-  position: fixed; bottom: 2rem; right: 2rem; width: 50px; height: 50px; border-radius: 50%;
-  display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 999;
-  transition: transform 0.2s; background-color: var(--fundo-modal); box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-#hermes-app #open-chat-icon:hover { transform: scale(1.1); }
-#hermes-app #open-chat-icon svg { width: 28px; height: 28px; fill: var(--texto); }
 
 /* ---------- TABELA ---------- */
 #hermes-app #search-results-table-container {
