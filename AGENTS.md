@@ -20,7 +20,7 @@ abstração de fonte de dados (`wiki | local`), nunca código duplicado.
 
 | Arquivo | Papel |
 |---|---|
-| `app.js` | Toda a lógica: carga de dados, associação URA/Fila, tabelas, busca, modais, tema, COPIAR, sugestões |
+| `app.js` | Toda a lógica: carga de dados, associação URA/Fila, tabelas, busca, modais, COPIAR, sugestões |
 | `style.css` | Todo o visual. Inclui regras `body:has(.modal-container.active)` que escondem o chrome da wiki |
 | `wiki-snippet.html` | HTML colado na página da wiki. Carrega `style.css` e `app.js` por URL e contém a estrutura (botões, modais) |
 
@@ -148,8 +148,8 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 1. **URA/Fila por dicionário** (Issue #3) mesclado e **testado na wiki pelo usuário** (2026-10-06): funcionando.
 2. **`style.css` escopado em `#hermes-app`** (Issue #4), com o visual do layout antigo (fundo do modal
    verde-água com blur, modal branco, rodapé abaixo dos botões). Só as regras `body:has(...)` são globais.
-3. **Tema escuro:** `app.js` alterna `dark-mode` em `#hermes-app` e o CSS usa `#hermes-app.dark-mode` (variáveis).
-4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=6` (Phase Out com todas as colunas).
+3. **Tema único claro** (2026-10-07): botão de tema e modo escuro removidos a pedido do usuário (desnecessários na wiki).
+4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=7`.
    **O `<html>…</html>` é obrigatório:** é a tag do `$wgRawHtml` que faz a wiki aceitar HTML cru.
    Sem ele, a wiki mostra as tags como texto e nada funciona (aconteceu em 2026-10-06).
    Modal da tabela (Issue #21) cresce com as colunas (`max-content`, limite 95vw); **testado na wiki pelo usuário** (2026-10-06).
@@ -157,7 +157,7 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 6. **XSS:** corrigido no PR da Issue #2. Todo valor do CSV passa por `esc()` antes de `innerHTML`.
    Regra: qualquer interpolação nova de dado em template HTML usa `esc()`.
 7. **Phase Out por nome de coluna** (Issue #5): `PHASEOUT_COLUNAS` no `app.js` lista as 10 colunas (nome normalizado, sem pontuação; fallback por posição). Tabela e modal de detalhes mostram todas.
-8. Data do rodapé (`09/07/2026`) hardcoded no snippet.
+8. Rodapé fixo no snippet: "@O Hermes consulta semanalmente as informações de produto pelo Salesforce." (sem data desde 2026-10-07).
 9. Mensagem "Digite para pesquisar." ativa via `SEARCH_HINT`.
 10. Não existe `.gitignore` (logo, `.env` **não** está ignorado).
 11. Ambiente: Node.js v24.19.0 LTS instalado em 2026-10-06 (`C:\Program Files\nodejs`); `gh` autenticado como `cauagaliza`.
