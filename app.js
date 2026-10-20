@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchAllData() {
         try {
             const [resT, resP] = await Promise.all([
-                fetch('https://suporte.intelbras.com.br/index.php?title=Teste_hermes_tranferencia&action=raw'),
+                fetch('https://suporte.intelbras.com.br/index.php?title=Hermes_tranferencia&action=raw'),
                 fetch('https://suporte.intelbras.com.br/index.php?title=Teste_hermes_phaseout&action=raw'),
             ]);
 

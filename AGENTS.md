@@ -35,7 +35,7 @@ Repositório: `https://github.com/cauagaliza/hermes-assets` (branch principal: `
 | Página | Uso |
 |---|---|
 | `Teste_hermes` | Hospeda o snippet (o app) |
-| `Teste_hermes_tranferencia` | Dados de Transferência. A grafia **sem "s" é o nome real: não corrija** |
+| `Hermes_tranferencia` | Dados de Transferência (até 2026-10-20 era `Teste_hermes_tranferencia`). A grafia **sem "s" é o nome real: não corrija** |
 | `Teste_hermes_phaseout` | Dados de Phase Out |
 | `Tabela_ura` | Referência histórica. Colunas: `Produtos;Time atendimento;Código Atual;Novo código unificado` |
 | `Tabela_gtc` | Referência histórica. Colunas: `Segmento;Fila;Responsável` |
@@ -107,7 +107,7 @@ chrome do Vector e neutralizam `transform/filter/contain` nos ancestrais. **Não
 - Usar a API (`api.php`: `action=login` → token → `action=edit`) por script, lendo credenciais do ambiente.
 - **Leitura é livre. Escrita só com confirmação explícita do usuário, a cada vez**, mostrando o diff antes/depois.
 - Trabalhar primeiro nas páginas `Teste_*`.
-- **NUNCA editar as páginas de dados** (`Teste_hermes_tranferencia`, `Teste_hermes_phaseout`): o conteúdo é do usuário.
+- **NUNCA editar as páginas de dados** (`Hermes_tranferencia`, `Teste_hermes_tranferencia`, `Teste_hermes_phaseout`): o conteúdo é do usuário.
 - Para editar `Teste_hermes` (snippet), explicar **onde e por quê** antes. Só é necessário quando muda a
   estrutura HTML/ids ou para subir o `?v=N`.
 - Se a API exigir SSO/VPN ou rejeitar o login: **pare e avise**. Não tente contornar.
