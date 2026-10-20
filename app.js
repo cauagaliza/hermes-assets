@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================================
     // PHASE OUT — colunas exibidas, na ordem do cabeçalho da página
-    // Teste_hermes_phaseout. Lidas por nome normalizado (sem acento,
+    // Hermes_phaseout. Lidas por nome normalizado (sem acento,
     // minúsculo, sem pontuação); se o nome não bater, cai para a posição.
     // =========================================================================
     const PHASEOUT_COLUNAS = [
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const [resT, resP] = await Promise.all([
                 fetch('https://suporte.intelbras.com.br/index.php?title=Hermes_tranferencia&action=raw'),
-                fetch('https://suporte.intelbras.com.br/index.php?title=Teste_hermes_phaseout&action=raw'),
+                fetch('https://suporte.intelbras.com.br/index.php?title=Hermes_phaseout&action=raw'),
             ]);
 
             // Phase Out
