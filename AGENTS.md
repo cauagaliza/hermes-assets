@@ -167,7 +167,7 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
     `api.php` (sem login hoje) e guarda cópia em `backend/cache/` (`.csv`), servida se a wiki cair.
 13. **Página de Transferência trocada para `Hermes_tranferencia`** (2026-10-20): hermes-assets Issue #24 / PR #25,
     hermes2-app Issue #1 / PR #2. Publicado na wiki com `?v=8` e **testado pelo usuário** (2026-10-20).
-14. **Página de Phase Out trocada para `Hermes_phaseout`** (2026-10-20), mesmo fluxo; snippet em `?v=9`.
+14. **Página de Phase Out trocada para `Hermes_phaseout`** (2026-10-20), mesmo fluxo; publicado na wiki com `?v=9` e **testado pelo usuário** (2026-10-20).
     O backend local lê a página por `PAGINA_PHASEOUT` (padrão `Hermes_phaseout`).
 
 ## 7. Backlog (Issues no GitHub)
@@ -231,5 +231,5 @@ Confirmadas pelo usuário em 2026-10-06:
 - A wiki exige login: `action=raw` sem sessão redireciona para `Especial:Autenticar-se`.
   Acesso por agentes só via Bot Password no `.env` (§4.7).
 - **Cabeçalho do Phase Out** (2026-10-07): `Unidade;Segmento;Item;Descrição;Modelo;Data Phase out;Substituto direto;Descrição Sust. Dir.;Substituto Indicação;Descrição Subs. Ind.`. Todas as colunas aparecem na tabela.
-- **Versão do snippet:** `?v=8` publicado na wiki em 2026-10-20; `?v=9` vai com a troca do Phase Out.
+- **Versão do snippet:** `?v=9` publicado na wiki em 2026-10-20. Próxima mudança em `app.js`/`style.css` → `?v=10`.
 - Interpretação dos pedidos: "datalog" = Datadog; "Comilint" = commitlint; "Stryke" = Stryker.
