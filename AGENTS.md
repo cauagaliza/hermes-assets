@@ -38,7 +38,7 @@ Página de Transferência no local: `PAGINA_TRANSFERENCIA` (padrão `Hermes_tran
 |---|---|
 | `Teste_hermes` | Hospeda o snippet (o app) |
 | `Hermes_tranferencia` | Dados de Transferência (até 2026-10-20 era `Teste_hermes_tranferencia`). A grafia **sem "s" é o nome real: não corrija** |
-| `Teste_hermes_phaseout` | Dados de Phase Out |
+| `Hermes_phaseout` | Dados de Phase Out (até 2026-10-20 era `Teste_hermes_phaseout`) |
 | `Tabela_ura` | Referência histórica. Colunas: `Produtos;Time atendimento;Código Atual;Novo código unificado` |
 | `Tabela_gtc` | Referência histórica. Colunas: `Segmento;Fila;Responsável` |
 
@@ -109,7 +109,7 @@ chrome do Vector e neutralizam `transform/filter/contain` nos ancestrais. **Não
 - Usar a API (`api.php`: `action=login` → token → `action=edit`) por script, lendo credenciais do ambiente.
 - **Leitura é livre. Escrita só com confirmação explícita do usuário, a cada vez**, mostrando o diff antes/depois.
 - Trabalhar primeiro nas páginas `Teste_*`.
-- **NUNCA editar as páginas de dados** (`Hermes_tranferencia`, `Teste_hermes_tranferencia`, `Teste_hermes_phaseout`): o conteúdo é do usuário.
+- **NUNCA editar as páginas de dados** (`Hermes_tranferencia`, `Hermes_phaseout`, `Teste_hermes_tranferencia`, `Teste_hermes_phaseout`): o conteúdo é do usuário.
 - Para editar `Teste_hermes` (snippet), explicar **onde e por quê** antes. Só é necessário quando muda a
   estrutura HTML/ids ou para subir o `?v=N`.
 - Se a API exigir SSO/VPN ou rejeitar o login: **pare e avise**. Não tente contornar.
@@ -151,7 +151,7 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 2. **`style.css` escopado em `#hermes-app`** (Issue #4), com o visual do layout antigo (fundo do modal
    verde-água com blur, modal branco, rodapé abaixo dos botões). Só as regras `body:has(...)` são globais.
 3. **Tema único claro** (2026-10-07): botão de tema e modo escuro removidos a pedido do usuário (desnecessários na wiki).
-4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=8`.
+4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=9`.
    **O `<html>…</html>` é obrigatório:** é a tag do `$wgRawHtml` que faz a wiki aceitar HTML cru.
    Sem ele, a wiki mostra as tags como texto e nada funciona (aconteceu em 2026-10-06).
    Modal da tabela (Issue #21) cresce com as colunas (`max-content`, limite 95vw); **testado na wiki pelo usuário** (2026-10-06).
@@ -166,7 +166,9 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 12. O modo local usa **outro código**, no repositório `hermes2-app`. O backend lê as mesmas páginas da wiki pela
     `api.php` (sem login hoje) e guarda cópia em `backend/cache/` (`.csv`), servida se a wiki cair.
 13. **Página de Transferência trocada para `Hermes_tranferencia`** (2026-10-20): hermes-assets Issue #24 / PR #25,
-    hermes2-app Issue #1 / PR #2. Após o merge, subir o `?v=N` do snippet. Phase Out continua em `Teste_hermes_phaseout`.
+    hermes2-app Issue #1 / PR #2. Publicado na wiki com `?v=8` e **testado pelo usuário** (2026-10-20).
+14. **Página de Phase Out trocada para `Hermes_phaseout`** (2026-10-20), mesmo fluxo; snippet em `?v=9`.
+    O backend local lê a página por `PAGINA_PHASEOUT` (padrão `Hermes_phaseout`).
 
 ## 7. Backlog (Issues no GitHub)
 
@@ -196,7 +198,7 @@ Consulte antes de mexer nestes pontos. Ao serem respondidas, mova para §9.
 
 1. Data do rodapé: de onde vem a fonte única? (Issue #7)
 2. (resolvida: ver §9, cabeçalho do Phase Out)
-3. Valor atual de `?v=N` no snippet publicado na wiki (a wiki exige login; não dá para ler sem credencial).
+3. (resolvida: ver §9, versão do snippet)
 
 ## 9. Decisões tomadas
 
@@ -229,4 +231,5 @@ Confirmadas pelo usuário em 2026-10-06:
 - A wiki exige login: `action=raw` sem sessão redireciona para `Especial:Autenticar-se`.
   Acesso por agentes só via Bot Password no `.env` (§4.7).
 - **Cabeçalho do Phase Out** (2026-10-07): `Unidade;Segmento;Item;Descrição;Modelo;Data Phase out;Substituto direto;Descrição Sust. Dir.;Substituto Indicação;Descrição Subs. Ind.`. Todas as colunas aparecem na tabela.
+- **Versão do snippet:** `?v=8` publicado na wiki em 2026-10-20; `?v=9` vai com a troca do Phase Out.
 - Interpretação dos pedidos: "datalog" = Datadog; "Comilint" = commitlint; "Stryke" = Stryker.
