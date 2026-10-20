@@ -26,6 +26,8 @@ abstração de fonte de dados (`wiki | local`), nunca código duplicado.
 
 Pasta local: `E:\Cauã\hermes\hermes-assets` (tem "ã": **sempre use aspas** em comandos de shell).
 Repositório: `https://github.com/cauagaliza/hermes-assets` (branch principal: `main`).
+App local: `https://github.com/cauagaliza/hermes2-app` (branch `main`): backend Node (`backend/src`) + frontend (`frontend/public`).
+Página de Transferência no local: `PAGINA_TRANSFERENCIA` (padrão `Hermes_tranferencia`, sobrescrevível no `backend/.env`).
 
 **Assets publicados (GitHub Pages):**
 - `https://cauagaliza.github.io/hermes-assets/style.css`
@@ -35,7 +37,7 @@ Repositório: `https://github.com/cauagaliza/hermes-assets` (branch principal: `
 | Página | Uso |
 |---|---|
 | `Teste_hermes` | Hospeda o snippet (o app) |
-| `Teste_hermes_tranferencia` | Dados de Transferência. A grafia **sem "s" é o nome real: não corrija** |
+| `Hermes_tranferencia` | Dados de Transferência (até 2026-10-20 era `Teste_hermes_tranferencia`). A grafia **sem "s" é o nome real: não corrija** |
 | `Teste_hermes_phaseout` | Dados de Phase Out |
 | `Tabela_ura` | Referência histórica. Colunas: `Produtos;Time atendimento;Código Atual;Novo código unificado` |
 | `Tabela_gtc` | Referência histórica. Colunas: `Segmento;Fila;Responsável` |
@@ -107,7 +109,7 @@ chrome do Vector e neutralizam `transform/filter/contain` nos ancestrais. **Não
 - Usar a API (`api.php`: `action=login` → token → `action=edit`) por script, lendo credenciais do ambiente.
 - **Leitura é livre. Escrita só com confirmação explícita do usuário, a cada vez**, mostrando o diff antes/depois.
 - Trabalhar primeiro nas páginas `Teste_*`.
-- **NUNCA editar as páginas de dados** (`Teste_hermes_tranferencia`, `Teste_hermes_phaseout`): o conteúdo é do usuário.
+- **NUNCA editar as páginas de dados** (`Hermes_tranferencia`, `Teste_hermes_tranferencia`, `Teste_hermes_phaseout`): o conteúdo é do usuário.
 - Para editar `Teste_hermes` (snippet), explicar **onde e por quê** antes. Só é necessário quando muda a
   estrutura HTML/ids ou para subir o `?v=N`.
 - Se a API exigir SSO/VPN ou rejeitar o login: **pare e avise**. Não tente contornar.
@@ -149,7 +151,7 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 2. **`style.css` escopado em `#hermes-app`** (Issue #4), com o visual do layout antigo (fundo do modal
    verde-água com blur, modal branco, rodapé abaixo dos botões). Só as regras `body:has(...)` são globais.
 3. **Tema único claro** (2026-10-07): botão de tema e modo escuro removidos a pedido do usuário (desnecessários na wiki).
-4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=7`.
+4. O snippet é `<html><div id="hermes-app">…</div></html>`, sem `<head>/<body>`; assets em `?v=8`.
    **O `<html>…</html>` é obrigatório:** é a tag do `$wgRawHtml` que faz a wiki aceitar HTML cru.
    Sem ele, a wiki mostra as tags como texto e nada funciona (aconteceu em 2026-10-06).
    Modal da tabela (Issue #21) cresce com as colunas (`max-content`, limite 95vw); **testado na wiki pelo usuário** (2026-10-06).
@@ -161,7 +163,10 @@ Divergências entre o que foi descrito e o que **está de fato** no repositório
 9. Mensagem "Digite para pesquisar." ativa via `SEARCH_HINT`.
 10. Não existe `.gitignore` (logo, `.env` **não** está ignorado).
 11. Ambiente: Node.js v24.19.0 LTS instalado em 2026-10-06 (`C:\Program Files\nodejs`); `gh` autenticado como `cauagaliza`.
-12. O modo local usa **outro código** (lê um `.csv` na mesma pasta); ainda não está neste repositório.
+12. O modo local usa **outro código**, no repositório `hermes2-app`. O backend lê as mesmas páginas da wiki pela
+    `api.php` (sem login hoje) e guarda cópia em `backend/cache/` (`.csv`), servida se a wiki cair.
+13. **Página de Transferência trocada para `Hermes_tranferencia`** (2026-10-20): hermes-assets Issue #24 / PR #25,
+    hermes2-app Issue #1 / PR #2. Após o merge, subir o `?v=N` do snippet. Phase Out continua em `Teste_hermes_phaseout`.
 
 ## 7. Backlog (Issues no GitHub)
 
@@ -213,7 +218,7 @@ Confirmadas pelo usuário em 2026-10-06:
 - `redes_linha_future` existe: URA 479 / Redes Dedicado.
 - Regras de arquitetura ("Arch-contract") = **dependency-cruiser**.
 - **Datadog/New Relic: fora do escopo por enquanto.** Nenhuma telemetria externa até nova decisão.
-- Modo local hoje lê um `.csv` da mesma pasta (com internet disponível). Meta: **um único código**
+- Modo local (`hermes2-app`) lê as páginas da wiki pelo backend, com cache em `.csv`. Meta: **um único código**
   para wiki e local, com fonte de dados `wiki | local`. CSVs reais **não** vão para o repositório.
 - Exemplos aprovados no dicionário: `solar_offgrid` → 494; `solar_ongrid` → 492.
 - Tabela vazia mostra "Digite para pesquisar." (`SEARCH_HINT`). Manter.
